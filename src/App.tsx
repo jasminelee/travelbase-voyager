@@ -7,6 +7,7 @@ import Auth from './pages/Auth';
 import Experiences from './pages/Experiences';
 import Profile from './pages/Profile';
 import Bookings from './pages/Bookings';
+import Host from './pages/Host';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/experiences" element={<Experiences />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/bookings" element={<Bookings />} />
+          <Route path="/host" element={<Host />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />

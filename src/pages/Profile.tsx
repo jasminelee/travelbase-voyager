@@ -142,7 +142,7 @@ const Profile = () => {
                 </CardHeader>
                 <CardContent className="text-center">
                   <p className="text-sm text-gray-500">
-                    Member since {new Date(profile?.created_at || Date.now()).toLocaleDateString()}
+                    Member since {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : new Date().toLocaleDateString()}
                   </p>
                 </CardContent>
               </Card>
