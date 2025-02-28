@@ -50,7 +50,7 @@ const Experiences = () => {
                 Discover Extraordinary Experiences
               </h1>
               <p className={`text-lg text-white/90 mb-8 transition-all duration-500 delay-200 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                Explore unique activities hosted by locals around the world and pay with crypto
+                Explore unique activities hosted by locals around the world and pay with USDC
               </p>
               
               {/* Search Bar */}
