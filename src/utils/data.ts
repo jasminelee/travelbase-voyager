@@ -1,3 +1,4 @@
+
 import { Experience } from './types';
 import { supabase } from '../integrations/supabase/client';
 
@@ -173,7 +174,7 @@ export async function fetchExperiences(): Promise<Experience[]> {
       id: exp.id,
       title: exp.title,
       location: exp.location,
-      price: parseFloat(exp.price),
+      price: exp.price,
       currency: exp.currency,
       description: exp.description,
       host: {
@@ -186,7 +187,7 @@ export async function fetchExperiences(): Promise<Experience[]> {
       duration: exp.duration,
       category: exp.category,
       featured: exp.featured,
-      rating: exp.rating ? parseFloat(exp.rating) : undefined,
+      rating: exp.rating ? parseFloat(exp.rating.toString()) : undefined,
       reviewCount: exp.review_count || 0
     }));
   } catch (error) {
@@ -213,7 +214,7 @@ export async function fetchExperienceById(id: string): Promise<Experience | unde
       id: data.id,
       title: data.title,
       location: data.location,
-      price: parseFloat(data.price),
+      price: data.price,
       currency: data.currency,
       description: data.description,
       host: {
@@ -226,7 +227,7 @@ export async function fetchExperienceById(id: string): Promise<Experience | unde
       duration: data.duration,
       category: data.category,
       featured: data.featured,
-      rating: data.rating ? parseFloat(data.rating) : undefined,
+      rating: data.rating ? parseFloat(data.rating.toString()) : undefined,
       reviewCount: data.review_count || 0
     };
   } catch (error) {
@@ -267,7 +268,7 @@ export async function fetchFeaturedExperiences(): Promise<Experience[]> {
       id: exp.id,
       title: exp.title,
       location: exp.location,
-      price: parseFloat(exp.price),
+      price: exp.price,
       currency: exp.currency,
       description: exp.description,
       host: {
@@ -280,7 +281,7 @@ export async function fetchFeaturedExperiences(): Promise<Experience[]> {
       duration: exp.duration,
       category: exp.category,
       featured: exp.featured,
-      rating: exp.rating ? parseFloat(exp.rating) : undefined,
+      rating: exp.rating ? parseFloat(exp.rating.toString()) : undefined,
       reviewCount: exp.review_count || 0
     }));
   } catch (error) {
@@ -311,7 +312,7 @@ export async function fetchExperiencesByCategory(category: string): Promise<Expe
       id: exp.id,
       title: exp.title,
       location: exp.location,
-      price: parseFloat(exp.price),
+      price: exp.price,
       currency: exp.currency,
       description: exp.description,
       host: {
@@ -324,7 +325,7 @@ export async function fetchExperiencesByCategory(category: string): Promise<Expe
       duration: exp.duration,
       category: exp.category,
       featured: exp.featured,
-      rating: exp.rating ? parseFloat(exp.rating) : undefined,
+      rating: exp.rating ? parseFloat(exp.rating.toString()) : undefined,
       reviewCount: exp.review_count || 0
     }));
   } catch (error) {

@@ -3,12 +3,18 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import ExperienceCard from './ExperienceCard';
-import { getFeaturedExperiences } from '../utils/data';
+import { fetchFeaturedExperiences } from '../utils/data';
+import { useQuery } from '@tanstack/react-query';
 
 const FeaturedExperiences = () => {
-  const [experiences] = useState(getFeaturedExperiences());
   const [visible, setVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
+
+  // Fetch featured experiences from Supabase using React Query
+  const { data: experiences, isLoading } = useQuery({
+    queryKey: ['featuredExperiences'],
+    queryFn: fetchFeaturedExperiences
+  });
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -51,20 +57,28 @@ const FeaturedExperiences = () => {
           </Link>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {experiences.map((experience, index) => (
-            <div 
-              key={experience.id}
-              className={`transition-all duration-700 delay-${index * 100} ${
-                visible 
-                  ? 'opacity-100 translate-y-0' 
-                  : 'opacity-0 translate-y-8'
-              }`}
-            >
-              <ExperienceCard experience={experience} featured />
-            </div>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3].map((index) => (
+              <div key={index} className="animate-pulse bg-white rounded-2xl h-[400px]"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {experiences?.map((experience, index) => (
+              <div 
+                key={experience.id}
+                className={`transition-all duration-700 delay-${index * 100} ${
+                  visible 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-8'
+                }`}
+              >
+                <ExperienceCard experience={experience} featured />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

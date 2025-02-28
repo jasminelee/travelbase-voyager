@@ -4,34 +4,33 @@ import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ExperienceCard from '../components/ExperienceCard';
-import { experienceData, categories } from '../utils/data';
+import { categories, fetchExperiences, fetchExperiencesByCategory } from '../utils/data';
+import { Experience } from '../utils/types';
 import { Search, Filter, MapPin } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 const Experiences = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [filteredExperiences, setFilteredExperiences] = useState(experienceData);
   const [searchTerm, setSearchTerm] = useState('');
   const [loaded, setLoaded] = useState(false);
   
-  useEffect(() => {
-    // Filter experiences based on category and search term
-    let filtered = experienceData;
+  // Fetch experiences from Supabase using React Query
+  const { data: experiences, isLoading } = useQuery({
+    queryKey: ['experiences', selectedCategory],
+    queryFn: () => selectedCategory === 'all' 
+      ? fetchExperiences() 
+      : fetchExperiencesByCategory(selectedCategory)
+  });
+  
+  // Apply search filter
+  const filteredExperiences = experiences?.filter(exp => {
+    if (!searchTerm) return true;
     
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(exp => exp.category === selectedCategory);
-    }
-    
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(exp => 
-        exp.title.toLowerCase().includes(term) || 
-        exp.location.toLowerCase().includes(term) ||
-        exp.description.toLowerCase().includes(term)
-      );
-    }
-    
-    setFilteredExperiences(filtered);
-  }, [selectedCategory, searchTerm]);
+    const term = searchTerm.toLowerCase();
+    return exp.title.toLowerCase().includes(term) || 
+      exp.location.toLowerCase().includes(term) ||
+      exp.description.toLowerCase().includes(term);
+  }) || [];
   
   useEffect(() => {
     setLoaded(true);
@@ -94,7 +93,7 @@ const Experiences = () => {
             {/* Filter Results */}
             <div className="flex justify-between items-center mb-8">
               <p className="text-gray-600">
-                {filteredExperiences.length} experience{filteredExperiences.length !== 1 ? 's' : ''} found
+                {isLoading ? 'Loading...' : `${filteredExperiences.length} experience${filteredExperiences.length !== 1 ? 's' : ''} found`}
               </p>
               
               <button className="flex items-center text-gray-700 hover:text-primary bg-white hover:bg-gray-50 border border-gray-200 px-4 py-2 rounded-lg shadow-sm transition-colors">
@@ -104,7 +103,13 @@ const Experiences = () => {
             </div>
             
             {/* Results Grid */}
-            {filteredExperiences.length > 0 ? (
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[1, 2, 3, 4, 5, 6].map((index) => (
+                  <div key={index} className="animate-pulse bg-white rounded-2xl h-[400px]"></div>
+                ))}
+              </div>
+            ) : filteredExperiences.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredExperiences.map((experience) => (
                   <div key={experience.id} className="animate-on-scroll">
