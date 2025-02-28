@@ -54,8 +54,8 @@ export const experienceData: Experience[] = [
     id: 'f2a1abcb-da24-4cdd-8f0f-7b15c029ac18',
     title: 'Northern Lights Photography Expedition',
     location: 'Tromsø, Norway',
-    price: 250,
-    currency: 'USDC',
+    price: 0.15,
+    currency: 'ETH',
     description: 'Chase the aurora borealis with an expert photographer and guide. This small-group expedition takes you away from light pollution to the best spots for viewing the northern lights. Learn photography techniques specifically for capturing this natural phenomenon and enjoy warm drinks and traditional Norwegian snacks around a campfire while waiting for the show.',
     host: {
       name: 'Erik',
@@ -101,8 +101,8 @@ export const experienceData: Experience[] = [
     id: 'c81d9a8d-54cb-4136-90b5-5e0c1f8c88a6',
     title: "Michelin Chef's Table Experience",
     location: 'Barcelona, Spain',
-    price: 350,
-    currency: 'USDC',
+    price: 0.2,
+    currency: 'ETH',
     description: "Enjoy a private chef's table experience with a Michelin-starred chef in Barcelona. Your evening begins with a market tour to select fresh ingredients, followed by an intimate cooking demonstration and an exclusive multi-course tasting menu with wine pairings. The chef will explain each dish's inspiration and technique, offering a true insider's view of high-end culinary arts.",
     host: {
       name: 'Carlos',
@@ -124,8 +124,8 @@ export const experienceData: Experience[] = [
     id: '9e7b4ec0-f2a4-40c3-ac40-9940e96298a5',
     title: 'Private Helicopter Tour of the Grand Canyon',
     location: 'Las Vegas, USA',
-    price: 499,
-    currency: 'USDC',
+    price: 0.01,
+    currency: 'BTC',
     description: 'Experience the majesty of the Grand Canyon from the air with this exclusive helicopter tour departing from Las Vegas. Soar over the Hoover Dam, Lake Mead, and the Colorado River before descending 4,000 feet into the canyon for a champagne picnic on a private plateau overlooking the river. The return flight showcases the spectacular Las Vegas Strip from above.',
     host: {
       name: 'Michael',

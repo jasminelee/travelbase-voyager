@@ -56,16 +56,22 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
     setLoading(false);
   };
 
-  // Determine which cryptocurrency to use based on the currency provided
-  // Map common fiat currencies to appropriate crypto
+  // Use the cryptocurrency directly if it's a known crypto token
   const getAssetSymbol = () => {
+    const knownCryptos = ['USDC', 'ETH', 'BTC'];
+    
+    if (knownCryptos.includes(currency)) {
+      return currency;
+    }
+    
+    // For fiat currencies, default to USDC
     switch(currency.toUpperCase()) {
       case 'USD':
         return 'USDC';
       case 'EUR':
         return 'USDC';
       default:
-        return currency; // Assume it's already a crypto symbol
+        return 'USDC'; // Default to USDC for any unrecognized currency
     }
   };
 
@@ -95,7 +101,7 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
           ) : (
             <>
               <Wallet className="mr-2 h-4 w-4" />
-              Pay with Crypto
+              Pay with {getAssetSymbol()}
             </>
           )}
         </Button>
@@ -105,8 +111,8 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
             assetSymbol={getAssetSymbol()}
             country="US"
             currency={currency}
-            headerText="Complete your payment"
-            buttonText="Pay now"
+            headerText={`Pay ${amount} ${currency} for this experience`}
+            buttonText={`Pay ${amount} ${currency}`}
             onSuccess={handleSuccess}
             onError={handleError}
             onStatus={(status) => {
