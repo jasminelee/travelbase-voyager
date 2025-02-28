@@ -7,8 +7,8 @@ import Footer from '../components/Footer';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Calendar, Clock, MapPin, Star, Users, ChevronLeft, ChevronRight, Share2, Heart, Award } from 'lucide-react';
-import { getExperienceById } from '../utils/data';
-import { BookingDetails } from '../utils/types';
+import { getExperienceById, fetchExperienceById } from '../utils/data';
+import { BookingDetails, Experience } from '../utils/types';
 import PaymentModal from '../components/PaymentModal';
 import { useToast } from '../hooks/use-toast';
 
@@ -16,7 +16,7 @@ const ExperienceDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [experience, setExperience] = useState(id ? getExperienceById(id) : null);
+  const [experience, setExperience] = useState<Experience | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [guests, setGuests] = useState(1);
@@ -34,19 +34,37 @@ const ExperienceDetail = () => {
   }, []);
 
   useEffect(() => {
-    if (id) {
-      const foundExperience = getExperienceById(id);
-      setExperience(foundExperience);
+    async function loadExperience() {
+      if (!id) return;
       
-      if (!foundExperience) {
+      try {
+        setLoading(true);
+        const foundExperience = await fetchExperienceById(id);
+        
+        if (!foundExperience) {
+          toast({
+            title: "Experience not found",
+            description: "The experience you're looking for doesn't exist or has been removed.",
+            variant: "destructive",
+          });
+          navigate('/experiences');
+          return;
+        }
+        
+        setExperience(foundExperience);
+      } catch (error) {
+        console.error("Error loading experience:", error);
         toast({
-          title: "Experience not found",
-          description: "The experience you're looking for doesn't exist or has been removed.",
+          title: "Error loading experience",
+          description: "There was a problem loading the experience details.",
           variant: "destructive",
         });
-        navigate('/experiences');
+      } finally {
+        setLoading(false);
       }
     }
+    
+    loadExperience();
   }, [id, navigate, toast]);
 
   const handleNextImage = () => {

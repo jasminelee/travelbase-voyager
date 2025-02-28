@@ -1,6 +1,7 @@
-
 import { Experience } from './types';
+import { supabase } from '../integrations/supabase/client';
 
+// Keep the mock data as a fallback or for development
 export const experienceData: Experience[] = [
   {
     id: '6edcbc9e-1a4a-4970-a970-94cca2a368b3',
@@ -155,6 +156,86 @@ export const categories = [
   { name: 'Night Activities', value: 'Night Activities' }
 ];
 
+// Fetch all experiences from the database
+export async function fetchExperiences(): Promise<Experience[]> {
+  try {
+    const { data, error } = await supabase
+      .from('experiences')
+      .select('*');
+    
+    if (error) {
+      console.error('Error fetching experiences:', error);
+      return experienceData; // Fallback to mock data
+    }
+    
+    // Map the database results to the Experience type
+    return data.map((exp) => ({
+      id: exp.id,
+      title: exp.title,
+      location: exp.location,
+      price: parseFloat(exp.price),
+      currency: exp.currency,
+      description: exp.description,
+      host: {
+        name: 'Host', // This would need to be fetched from profiles table
+        rating: 4.9,  // This would need to be calculated or fetched
+        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop'
+      },
+      images: exp.images,
+      amenities: exp.amenities,
+      duration: exp.duration,
+      category: exp.category,
+      featured: exp.featured,
+      rating: exp.rating ? parseFloat(exp.rating) : undefined,
+      reviewCount: exp.review_count || 0
+    }));
+  } catch (error) {
+    console.error('Error in fetchExperiences:', error);
+    return experienceData; // Fallback to mock data
+  }
+}
+
+// Get an experience by ID from the database
+export async function fetchExperienceById(id: string): Promise<Experience | undefined> {
+  try {
+    const { data, error } = await supabase
+      .from('experiences')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (error || !data) {
+      console.error('Error fetching experience by ID:', error);
+      return getExperienceById(id); // Fallback to mock data
+    }
+    
+    return {
+      id: data.id,
+      title: data.title,
+      location: data.location,
+      price: parseFloat(data.price),
+      currency: data.currency,
+      description: data.description,
+      host: {
+        name: 'Host', // This would need to be fetched from profiles table
+        rating: 4.9,  // This would need to be calculated or fetched
+        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop'
+      },
+      images: data.images,
+      amenities: data.amenities,
+      duration: data.duration,
+      category: data.category,
+      featured: data.featured,
+      rating: data.rating ? parseFloat(data.rating) : undefined,
+      reviewCount: data.review_count || 0
+    };
+  } catch (error) {
+    console.error('Error in fetchExperienceById:', error);
+    return getExperienceById(id); // Fallback to mock data
+  }
+}
+
+// Keep these synchronous methods for backward compatibility
 export function getExperienceById(id: string): Experience | undefined {
   return experienceData.find(exp => exp.id === id);
 }
@@ -166,4 +247,88 @@ export function getFeaturedExperiences(): Experience[] {
 export function getExperiencesByCategory(category: string): Experience[] {
   if (category === 'all') return experienceData;
   return experienceData.filter(exp => exp.category === category);
+}
+
+// New asynchronous methods to fetch from database
+export async function fetchFeaturedExperiences(): Promise<Experience[]> {
+  try {
+    const { data, error } = await supabase
+      .from('experiences')
+      .select('*')
+      .eq('featured', true);
+    
+    if (error) {
+      console.error('Error fetching featured experiences:', error);
+      return getFeaturedExperiences(); // Fallback to mock data
+    }
+    
+    // Map the database results to the Experience type
+    return data.map((exp) => ({
+      id: exp.id,
+      title: exp.title,
+      location: exp.location,
+      price: parseFloat(exp.price),
+      currency: exp.currency,
+      description: exp.description,
+      host: {
+        name: 'Host', // This would need to be fetched from profiles table
+        rating: 4.9,  // This would need to be calculated or fetched
+        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop'
+      },
+      images: exp.images,
+      amenities: exp.amenities,
+      duration: exp.duration,
+      category: exp.category,
+      featured: exp.featured,
+      rating: exp.rating ? parseFloat(exp.rating) : undefined,
+      reviewCount: exp.review_count || 0
+    }));
+  } catch (error) {
+    console.error('Error in fetchFeaturedExperiences:', error);
+    return getFeaturedExperiences(); // Fallback to mock data
+  }
+}
+
+export async function fetchExperiencesByCategory(category: string): Promise<Experience[]> {
+  try {
+    let query = supabase
+      .from('experiences')
+      .select('*');
+    
+    if (category !== 'all') {
+      query = query.eq('category', category);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching experiences by category:', error);
+      return getExperiencesByCategory(category); // Fallback to mock data
+    }
+    
+    // Map the database results to the Experience type
+    return data.map((exp) => ({
+      id: exp.id,
+      title: exp.title,
+      location: exp.location,
+      price: parseFloat(exp.price),
+      currency: exp.currency,
+      description: exp.description,
+      host: {
+        name: 'Host', // This would need to be fetched from profiles table
+        rating: 4.9,  // This would need to be calculated or fetched
+        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop'
+      },
+      images: exp.images,
+      amenities: exp.amenities,
+      duration: exp.duration,
+      category: exp.category,
+      featured: exp.featured,
+      rating: exp.rating ? parseFloat(exp.rating) : undefined,
+      reviewCount: exp.review_count || 0
+    }));
+  } catch (error) {
+    console.error('Error in fetchExperiencesByCategory:', error);
+    return getExperiencesByCategory(category); // Fallback to mock data
+  }
 }
