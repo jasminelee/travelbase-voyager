@@ -99,11 +99,11 @@ export const experienceData: Experience[] = [
   },
   {
     id: '5',
-    title: 'Michelin Chef's Table Experience',
+    title: "Michelin Chef's Table Experience",
     location: 'Barcelona, Spain',
     price: 350,
     currency: 'USDC',
-    description: 'Enjoy a private chef's table experience with a Michelin-starred chef in Barcelona. Your evening begins with a market tour to select fresh ingredients, followed by an intimate cooking demonstration and an exclusive multi-course tasting menu with wine pairings. The chef will explain each dish's inspiration and technique, offering a true insider's view of high-end culinary arts.',
+    description: "Enjoy a private chef's table experience with a Michelin-starred chef in Barcelona. Your evening begins with a market tour to select fresh ingredients, followed by an intimate cooking demonstration and an exclusive multi-course tasting menu with wine pairings. The chef will explain each dish's inspiration and technique, offering a true insider's view of high-end culinary arts.",
     host: {
       name: 'Carlos',
       rating: 4.99,
