@@ -38,7 +38,7 @@ export default function PaymentModal({
   experiencePrice,
   experienceCurrency,
   bookingDetails,
-  hostWalletAddress = '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA', // Default to a placeholder address
+  hostWalletAddress = '0x6b1B8c4B284b59967A59b7688085315F80Abd098', // Default to the specified wallet address
 }: PaymentModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -104,7 +104,7 @@ export default function PaymentModal({
         const newBookingId = bookingData[0].id;
         setBookingId(newBookingId);
         
-        // Create initial payment record
+        // Create initial payment record with the hostWalletAddress
         const { error: paymentError } = await supabase
           .from('payments')
           .insert({

@@ -116,6 +116,7 @@ export type Database = {
           booking_id: string
           created_at: string
           currency: string
+          hostWalletAddress: string | null
           id: string
           status: string
           transaction_hash: string | null
@@ -127,6 +128,7 @@ export type Database = {
           booking_id: string
           created_at?: string
           currency?: string
+          hostWalletAddress?: string | null
           id?: string
           status?: string
           transaction_hash?: string | null
@@ -138,6 +140,7 @@ export type Database = {
           booking_id?: string
           created_at?: string
           currency?: string
+          hostWalletAddress?: string | null
           id?: string
           status?: string
           transaction_hash?: string | null

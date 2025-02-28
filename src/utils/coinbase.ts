@@ -1,95 +1,71 @@
 
+// This file contains utility functions related to Coinbase payments
 import { supabase } from '../integrations/supabase/client';
-import { useOnchainKit } from '@coinbase/onchainkit';
-
-// USDC contract address (Base network)
-export const USDC_ADDRESS = "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA"; // Base USDC address
-
-/**
- * Creates a smart wallet for users who don't have a wallet
- */
-export const createSmartWallet = async () => {
-  try {
-    // Note: We need to use the hook within a React component context
-    // This is a placeholder implementation
-    console.log('Creating smart wallet...');
-    // Mock wallet address for testing
-    const mockWalletAddress = `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-    
-    return { 
-      data: { 
-        address: mockWalletAddress 
-      }, 
-      error: null 
-    };
-  } catch (error) {
-    console.error('Error creating smart wallet:', error);
-    return { data: null, error };
-  }
-};
-
-/**
- * Sends USDC from user to host
- */
-export const sendUSDCToHost = async (userWalletAddress: string, hostWalletAddress: string, amount: number) => {
-  try {
-    // This is a placeholder - in a real implementation, you would use 
-    // viem/ethers or the onchainKit to facilitate the transfer
-    console.log(`Sending ${amount} USDC from ${userWalletAddress} to ${hostWalletAddress}`);
-    
-    // Mock transaction hash for testing
-    const txHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-    
-    return { data: { transactionHash: txHash }, error: null };
-  } catch (error) {
-    console.error('Error sending USDC:', error);
-    return { data: null, error };
-  }
-};
-
-/**
- * Gets the payment status for a booking
- */
-export const getPaymentStatus = async (bookingId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('payments')
-      .select('status, transaction_hash')
-      .eq('booking_id', bookingId)
-      .single();
-
-    if (error) throw error;
-    return { data, error: null };
-  } catch (error) {
-    console.error('Error getting payment status:', error);
-    return { data: null, error };
-  }
-};
 
 /**
  * Updates the payment status in the database
  */
-export const updatePaymentStatus = async (bookingId: string, status: string, transactionHash?: string, walletAddress?: string) => {
+export async function updatePaymentStatus(
+  bookingId: string, 
+  status: 'pending' | 'completed' | 'failed',
+  transactionHash?: string,
+  walletAddress?: string
+) {
   try {
-    const updates: any = { status };
+    const updateData: any = { status };
     
     if (transactionHash) {
-      updates.transaction_hash = transactionHash;
+      updateData.transaction_hash = transactionHash;
     }
     
     if (walletAddress) {
-      updates.wallet_address = walletAddress;
+      updateData.wallet_address = walletAddress;
     }
-
-    const { data, error } = await supabase
+    
+    return await supabase
       .from('payments')
-      .update(updates)
+      .update(updateData)
       .eq('booking_id', bookingId);
-
-    if (error) throw error;
-    return { data, error: null };
   } catch (error) {
     console.error('Error updating payment status:', error);
-    return { data: null, error };
+    throw error;
   }
-};
+}
+
+/**
+ * Mock function to simulate sending USDC from user to host
+ * In a real application, this would integrate with a wallet service
+ */
+export async function sendUSDCToHost(
+  userWalletAddress: string,
+  hostWalletAddress: string,
+  amount: number
+) {
+  try {
+    // This is just a mock implementation
+    console.log(`Sending ${amount} USDC from ${userWalletAddress} to ${hostWalletAddress}`);
+    
+    // Simulate blockchain transaction delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Generate a mock transaction hash
+    const transactionHash = `0x${Array.from({length: 64}, () => 
+      Math.floor(Math.random() * 16).toString(16)).join('')}`;
+    
+    return {
+      data: {
+        transactionHash,
+        status: 'success',
+        amount: amount.toString(),
+        currency: 'USDC'
+      },
+      error: null
+    };
+  } catch (error) {
+    console.error('Error sending USDC:', error);
+    return {
+      data: null,
+      error
+    };
+  }
+}
