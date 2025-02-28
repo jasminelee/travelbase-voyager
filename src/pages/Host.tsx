@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { 
   Calendar, 
   Clock, 
-  MapPin, The_Slash,
+  MapPin, 
   Building, 
   Tag, 
   Image, 
@@ -718,7 +718,7 @@ const HostExperienceCard = ({ experience, refreshExperiences }: HostExperienceCa
             variant="outline" 
             size="sm"
             className="flex-1"
-            onClick={() => navigate(`/experiences/${experience.id}`)}
+            onClick={() => navigate(`/experience/${experience.id}`)}
           >
             View
           </Button>
