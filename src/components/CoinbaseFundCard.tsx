@@ -33,7 +33,8 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
     
     toast({
       title: "Payment successful",
-      description: "Your transaction has been completed successfully.",
+      description: `Your payment of ${amount} ${currency} has been completed.`,
+      variant: "default",
     });
     
     setShowCard(false);
@@ -85,6 +86,17 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
     });
   };
 
+  // Format the amount with appropriate precision for the currency
+  const formatAmount = () => {
+    switch(currency) {
+      case 'ETH':
+      case 'BTC':
+        return amount.toString(); // Don't round crypto amounts
+      default:
+        return amount.toFixed(2); // Format with 2 decimal places for fiat/USDC
+    }
+  };
+
   return (
     <div className="w-full">
       {!showCard ? (
@@ -111,8 +123,8 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
             assetSymbol={getAssetSymbol()}
             country="US"
             currency={currency}
-            headerText={`Pay ${amount} ${currency} for this experience`}
-            buttonText={`Pay ${amount} ${currency}`}
+            headerText={`Pay ${formatAmount()} ${currency} for this experience`}
+            buttonText={`Pay ${formatAmount()} ${currency}`}
             onSuccess={handleSuccess}
             onError={handleError}
             onStatus={(status) => {
