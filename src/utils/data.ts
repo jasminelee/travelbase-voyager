@@ -14,7 +14,8 @@ export const experienceData: Experience[] = [
     host: {
       name: 'Alexandra',
       rating: 4.97,
-      image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop'
+      image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop',
+      walletAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
     },
     images: [
       'https://images.unsplash.com/photo-1565874311820-41baccca7bb9?auto=format&fit=crop&w=1200&h=800',
@@ -38,7 +39,8 @@ export const experienceData: Experience[] = [
     host: {
       name: 'Takashi',
       rating: 4.98,
-      image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=250&h=250&auto=format&fit=crop'
+      image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=250&h=250&auto=format&fit=crop',
+      walletAddress: '0x3eB7b1C6f88D730A0D12EB9DD7C487987C2B8F7E'
     },
     images: [
       'https://images.unsplash.com/photo-1528360983277-13d401cdc186?auto=format&fit=crop&w=1200&h=800',
@@ -56,13 +58,14 @@ export const experienceData: Experience[] = [
     id: 'f2a1abcb-da24-4cdd-8f0f-7b15c029ac18',
     title: 'Northern Lights Photography Expedition',
     location: 'Tromsø, Norway',
-    price: 0.15,
-    currency: 'ETH',
+    price: 375,
+    currency: 'USDC',
     description: 'Chase the aurora borealis with an expert photographer and guide. This small-group expedition takes you away from light pollution to the best spots for viewing the northern lights. Learn photography techniques specifically for capturing this natural phenomenon and enjoy warm drinks and traditional Norwegian snacks around a campfire while waiting for the show.',
     host: {
       name: 'Erik',
       rating: 4.92,
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&h=250&auto=format&fit=crop'
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=250&h=250&auto=format&fit=crop',
+      walletAddress: '0xF4992f7196d0df7F5A1c6513a7F11a6a27942cB5'
     },
     images: [
       'https://images.unsplash.com/photo-1579033485043-6ffbd5a7eefc?auto=format&fit=crop&w=1200&h=800',
@@ -85,7 +88,8 @@ export const experienceData: Experience[] = [
     host: {
       name: 'Youssef',
       rating: 4.96,
-      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=250&h=250&auto=format&fit=crop'
+      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=250&h=250&auto=format&fit=crop',
+      walletAddress: '0xAb3930f8e99Cca0CADb6a736B9744d6583a341b9'
     },
     images: [
       'https://images.unsplash.com/photo-1464852045489-bccb7d17fe39?auto=format&fit=crop&w=1200&h=800',
@@ -103,13 +107,14 @@ export const experienceData: Experience[] = [
     id: 'c81d9a8d-54cb-4136-90b5-5e0c1f8c88a6',
     title: "Michelin Chef's Table Experience",
     location: 'Barcelona, Spain',
-    price: 0.2,
-    currency: 'ETH',
+    price: 500,
+    currency: 'USDC',
     description: "Enjoy a private chef's table experience with a Michelin-starred chef in Barcelona. Your evening begins with a market tour to select fresh ingredients, followed by an intimate cooking demonstration and an exclusive multi-course tasting menu with wine pairings. The chef will explain each dish's inspiration and technique, offering a true insider's view of high-end culinary arts.",
     host: {
       name: 'Carlos',
       rating: 4.99,
-      image: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?q=80&w=250&h=250&auto=format&fit=crop'
+      image: 'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?q=80&w=250&h=250&auto=format&fit=crop',
+      walletAddress: '0x1C2f089bE2883C11B7366B6566F9C2553CdB5e3f'
     },
     images: [
       'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&h=800',
@@ -126,13 +131,14 @@ export const experienceData: Experience[] = [
     id: '9e7b4ec0-f2a4-40c3-ac40-9940e96298a5',
     title: 'Private Helicopter Tour of the Grand Canyon',
     location: 'Las Vegas, USA',
-    price: 0.01,
-    currency: 'BTC',
+    price: 400,
+    currency: 'USDC',
     description: 'Experience the majesty of the Grand Canyon from the air with this exclusive helicopter tour departing from Las Vegas. Soar over the Hoover Dam, Lake Mead, and the Colorado River before descending 4,000 feet into the canyon for a champagne picnic on a private plateau overlooking the river. The return flight showcases the spectacular Las Vegas Strip from above.',
     host: {
       name: 'Michael',
       rating: 4.95,
-      image: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=250&h=250&auto=format&fit=crop'
+      image: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=250&h=250&auto=format&fit=crop',
+      walletAddress: '0x2E8a0aEbA34b2055F4E352a91C95eEB8F0B51dB6'
     },
     images: [
       'https://images.unsplash.com/photo-1527333656061-facecf3bff3c?auto=format&fit=crop&w=1200&h=800',
@@ -180,7 +186,8 @@ export async function fetchExperiences(): Promise<Experience[]> {
       host: {
         name: 'Host', // This would need to be fetched from profiles table
         rating: 4.9,  // This would need to be calculated or fetched
-        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop'
+        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop',
+        walletAddress: exp.host_id ? `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}` : undefined // Generate mock wallet address
       },
       images: exp.images,
       amenities: exp.amenities,
@@ -220,7 +227,8 @@ export async function fetchExperienceById(id: string): Promise<Experience | unde
       host: {
         name: 'Host', // This would need to be fetched from profiles table
         rating: 4.9,  // This would need to be calculated or fetched
-        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop'
+        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop',
+        walletAddress: data.host_id ? `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}` : undefined // Generate mock wallet address
       },
       images: data.images,
       amenities: data.amenities,
@@ -274,7 +282,8 @@ export async function fetchFeaturedExperiences(): Promise<Experience[]> {
       host: {
         name: 'Host', // This would need to be fetched from profiles table
         rating: 4.9,  // This would need to be calculated or fetched
-        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop'
+        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop',
+        walletAddress: exp.host_id ? `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}` : undefined // Generate mock wallet address
       },
       images: exp.images,
       amenities: exp.amenities,
@@ -318,7 +327,8 @@ export async function fetchExperiencesByCategory(category: string): Promise<Expe
       host: {
         name: 'Host', // This would need to be fetched from profiles table
         rating: 4.9,  // This would need to be calculated or fetched
-        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop'
+        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop',
+        walletAddress: exp.host_id ? `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}` : undefined // Generate mock wallet address
       },
       images: exp.images,
       amenities: exp.amenities,
