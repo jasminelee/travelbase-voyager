@@ -58,22 +58,18 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
   };
 
   // Use the cryptocurrency directly if it's a known crypto token
+  // For testnet, we should use the testnet tokens
   const getAssetSymbol = () => {
-    const knownCryptos = ['USDC', 'ETH', 'BTC'];
+    // On testnet, default to tUSDC (testnet USDC)
+    // Note: On Base Sepolia, you would typically use testnet versions of tokens
+    const knownCryptos = ['tUSDC', 'ETH'];
     
     if (knownCryptos.includes(currency)) {
       return currency;
     }
     
-    // For fiat currencies, default to USDC
-    switch(currency.toUpperCase()) {
-      case 'USD':
-        return 'USDC';
-      case 'EUR':
-        return 'USDC';
-      default:
-        return 'USDC'; // Default to USDC for any unrecognized currency
-    }
+    // For fiat currencies, default to tUSDC on testnet
+    return 'tUSDC'; // Testnet USDC
   };
 
   // Handle exit/cancel from the payment component
@@ -90,7 +86,6 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
   const formatAmount = () => {
     switch(currency) {
       case 'ETH':
-      case 'BTC':
         return amount.toString(); // Don't round crypto amounts
       default:
         return amount.toFixed(2); // Format with 2 decimal places for fiat/USDC
