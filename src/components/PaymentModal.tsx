@@ -14,10 +14,10 @@ import { Button } from './ui/button';
 import { format } from 'date-fns';
 import { supabase } from '../integrations/supabase/client';
 import { useToast } from '../hooks/use-toast';
-import { Calendar, Clock, Users, Wallet } from 'lucide-react';
+import { Calendar, Clock, Users, Wallet, Loader2 } from 'lucide-react';
 import { BookingDetails } from '../utils/types';
-import CoinbaseFundCard from './CoinbaseFundCard';
-import { sendUSDCToHost, updatePaymentStatus } from '../utils/coinbase';
+import { FundCard } from '@coinbase/onchainkit/fund';
+import { createSmartWallet, sendUSDCFromSmartWallet, updatePaymentStatus } from '../utils/coinbase';
 
 interface PaymentModalProps {
   open: boolean;
@@ -47,7 +47,8 @@ export default function PaymentModal({
   const [bookingCreated, setBookingCreated] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [userWalletAddress, setUserWalletAddress] = useState<string | null>(null);
+  const [paymentStep, setPaymentStep] = useState<'initial' | 'smart-wallet' | 'funding'>('initial');
+  const [smartWalletAddress, setSmartWalletAddress] = useState<string | null>(null);
 
   // Debug log for host wallet address
   useEffect(() => {
@@ -82,22 +83,6 @@ export default function PaymentModal({
 
     try {
       setIsCreatingBooking(true);
-
-      // Ensure experienceId is a valid UUID
-      if (!isValidUUID(experienceId)) {
-        console.error(`Invalid experience ID format: ${experienceId}`);
-        
-        // Try to verify if the experience exists in the database
-        const { data: experienceData, error: experienceError } = await supabase
-          .from('experiences')
-          .select('id')
-          .eq('id', experienceId)
-          .maybeSingle();
-        
-        if (experienceError || !experienceData) {
-          throw new Error(`Experience with ID ${experienceId} not found in the database`);
-        }
-      }
 
       console.log("Creating booking with experience ID:", experienceId);
       console.log("User ID:", user.id);
@@ -134,7 +119,7 @@ export default function PaymentModal({
           .insert({
             booking_id: newBookingId,
             amount: bookingDetails.totalPrice,
-            currency: 'USDC', // Always USDC now
+            currency: 'USDC',
             status: 'pending',
             hostWalletAddress: hostWalletAddress,
           });
@@ -162,13 +147,88 @@ export default function PaymentModal({
     }
   };
 
-  const handleSmartWalletPaymentSuccess = async (transactionHash: string, walletAddress: string) => {
+  const handleCreateSmartWallet = async () => {
+    if (!hostWalletAddress || !bookingId) return;
+    
+    try {
+      setIsProcessingPayment(true);
+      
+      // Create a smart wallet for the user
+      const { data: walletData, error: walletError } = await createSmartWallet();
+      
+      if (walletError || !walletData) {
+        throw new Error(walletError?.message || "Failed to create smart wallet");
+      }
+      
+      setSmartWalletAddress(walletData.address);
+      console.log("Created smart wallet with address:", walletData.address);
+      
+      toast({
+        title: "Smart wallet created",
+        description: "Now you can fund your wallet to complete the payment",
+      });
+      
+      setPaymentStep('funding');
+    } catch (error) {
+      console.error("Error creating smart wallet:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      
+      toast({
+        title: "Error creating wallet",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleFundSuccess = async (data: any) => {
+    if (!smartWalletAddress || !hostWalletAddress || !bookingId) return;
+    
+    try {
+      setIsProcessingPayment(true);
+      
+      console.log("Funding successful, proceeding with payment");
+      
+      // Send payment from smart wallet to host
+      const { data: txData, error: txError } = await sendUSDCFromSmartWallet(
+        smartWalletAddress,
+        hostWalletAddress,
+        bookingDetails.totalPrice
+      );
+      
+      if (txError || !txData) {
+        throw new Error(txError?.message || "Failed to send USDC payment");
+      }
+      
+      // Extract transaction hash
+      const transactionHash = txData.transactionHash;
+      
+      // Update payment status in database
+      await handlePaymentSuccess(transactionHash, smartWalletAddress);
+      
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      
+      toast({
+        title: "Payment error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (transactionHash: string, walletAddress: string) => {
     try {
       if (!bookingId) return;
 
       console.log("Processing successful payment for booking:", bookingId);
       console.log("Transaction hash:", transactionHash);
-      console.log("Smart wallet address:", walletAddress);
+      console.log("Wallet address:", walletAddress);
 
       // Update payment entry in the database
       const { error: paymentError } = await updatePaymentStatus(
@@ -206,96 +266,109 @@ export default function PaymentModal({
     }
   };
 
-  const handleDirectPaymentSuccess = async (transactionHash: string) => {
-    try {
-      if (!bookingId) return;
-
-      console.log("Processing successful payment for booking:", bookingId);
-      console.log("Transaction hash:", transactionHash);
-      console.log("User wallet:", userWalletAddress);
-
-      // Update payment entry in the database
-      const { error: paymentError } = await updatePaymentStatus(
-        bookingId,
-        'completed',
-        transactionHash,
-        userWalletAddress || undefined
-      );
-
-      if (paymentError) throw paymentError;
-
-      // Update booking status to confirmed
-      const { error: bookingUpdateError } = await supabase
-        .from('bookings')
-        .update({ status: 'confirmed' })
-        .eq('id', bookingId);
-
-      if (bookingUpdateError) throw bookingUpdateError;
-
-      toast({
-        title: "Booking confirmed",
-        description: "Your USDC payment was successful and booking confirmed.",
-      });
-
-      // Close modal and redirect to bookings page with the new booking ID
-      onOpenChange(false);
-      navigate(`/bookings?newBooking=${bookingId}`);
-    } catch (error) {
-      console.error('Error processing successful payment:', error);
-      toast({
-        title: "Payment processing error",
-        description: "Your payment was received but we couldn't update your booking status. Please contact support.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handlePaymentError = (errorMessage: string) => {
+  const handleConnectExistingWallet = () => {
+    // In a real implementation, this would connect to an existing wallet
+    // using wagmi/viem or another wallet connector
     toast({
-      title: "Payment failed",
-      description: errorMessage || "There was a problem processing your payment. Please try again.",
-      variant: "destructive",
+      title: "Wallet connection",
+      description: "This would connect to your existing wallet in a production environment",
     });
   };
 
-  const handleDirectP2PPayment = async () => {
-    if (!bookingId || !hostWalletAddress) return;
+  const renderPaymentStep = () => {
+    if (!bookingCreated) return null;
     
-    try {
-      setIsProcessingPayment(true);
-      
-      // Mock wallet connection - in a real app, use wagmi/viem hooks or OnchainKit
-      const tempWalletAddress = `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-      setUserWalletAddress(tempWalletAddress);
-      
-      console.log("Initiating P2P payment from:", tempWalletAddress);
-      console.log("To host wallet:", hostWalletAddress);
-      console.log("Amount:", bookingDetails.totalPrice);
-      
-      // Send USDC from user to host
-      const { data, error } = await sendUSDCToHost(
-        tempWalletAddress,
-        hostWalletAddress,
-        bookingDetails.totalPrice
-      );
-      
-      if (error) throw error;
-      
-      if (data?.transactionHash) {
-        await handleDirectPaymentSuccess(data.transactionHash);
-      }
-    } catch (error) {
-      console.error("Failed to complete P2P payment:", error);
-      handlePaymentError("Failed to complete the USDC transfer. Please try again.");
-    } finally {
-      setIsProcessingPayment(false);
+    switch (paymentStep) {
+      case 'initial':
+        return (
+          <div className="space-y-4 w-full">
+            <Button
+              onClick={handleCreateSmartWallet}
+              disabled={isProcessingPayment || !hostWalletAddress}
+              className="w-full"
+            >
+              <Wallet className="mr-2 h-4 w-4" />
+              Pay with Smart Wallet
+            </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">Or</span>
+              </div>
+            </div>
+            
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleConnectExistingWallet}
+            >
+              Connect Existing Wallet
+            </Button>
+          </div>
+        );
+        
+      case 'funding':
+        return (
+          <div className="space-y-4 w-full">
+            {isProcessingPayment ? (
+              <div className="flex flex-col items-center py-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                <p className="text-sm text-center">Processing your payment...</p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                  <p className="text-sm font-medium mb-1">Your smart wallet is ready</p>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Fund your wallet with USDC to complete your payment
+                  </p>
+                  {smartWalletAddress && (
+                    <p className="text-xs font-mono bg-white p-2 rounded truncate">
+                      {smartWalletAddress}
+                    </p>
+                  )}
+                </div>
+                
+                <FundCard
+                  assetSymbol="USDC"
+                  country="US"
+                  headerText={`Buy USDC to complete your payment`}
+                  buttonText={`Buy USDC`}
+                  onSuccess={handleFundSuccess}
+                  onError={(error) => {
+                    console.error("Funding error:", error);
+                    toast({
+                      title: "Funding error",
+                      description: error.message || "There was a problem funding your wallet",
+                      variant: "destructive",
+                    });
+                  }}
+                  onStatus={(status) => {
+                    console.log("Payment status:", status);
+                    if (status && status.statusName === 'exit') {
+                      setPaymentStep('initial');
+                    }
+                  }}
+                />
+                
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setPaymentStep('initial')}
+                >
+                  Back
+                </Button>
+              </>
+            )}
+          </div>
+        );
+        
+      default:
+        return null;
     }
-  };
-
-  // Helper function to validate UUID format
-  const isValidUUID = (uuid: string): boolean => {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(uuid);
   };
 
   return (
@@ -361,43 +434,7 @@ export default function PaymentModal({
               {isCreatingBooking ? 'Creating booking...' : 'Continue to Payment'}
             </Button>
           ) : (
-            <div className="w-full space-y-4">
-              <div className="space-y-4">
-                {/* Option 1: Direct P2P USDC payment (for users with a wallet) */}
-                <Button
-                  onClick={handleDirectP2PPayment}
-                  disabled={isProcessingPayment || !hostWalletAddress}
-                  className="w-full"
-                >
-                  <Wallet className="mr-2 h-4 w-4" />
-                  {isProcessingPayment ? 'Processing...' : 'Pay with Connected Wallet'}
-                </Button>
-                
-                {/* Option 2: For users without a wallet - create a smart wallet and fund with Coinbase */}
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white px-2 text-gray-500">Or</span>
-                  </div>
-                </div>
-                
-                {hostWalletAddress && (
-                  <CoinbaseFundCard
-                    amount={bookingDetails.totalPrice}
-                    currency="USDC"
-                    hostWalletAddress={hostWalletAddress}
-                    onSuccess={handleSmartWalletPaymentSuccess}
-                    onError={handlePaymentError}
-                  />
-                )}
-              </div>
-              
-              <p className="text-xs text-gray-500 text-center mt-2">
-                Your payment will be sent directly to the host's wallet.
-              </p>
-            </div>
+            renderPaymentStep()
           )}
         </DialogFooter>
       </DialogContent>

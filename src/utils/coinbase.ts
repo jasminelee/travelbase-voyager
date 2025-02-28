@@ -45,28 +45,24 @@ export async function updatePaymentStatus(
 
 /**
  * Creates a smart wallet for a user using OnchainKit
- * In a real implementation, this would be integrated with Coinbase's OnchainKit
- * Documentation: https://docs.base.org/identity/smart-wallet/
+ * This is meant to be used with the actual OnchainKit library
  */
 export async function createSmartWallet() {
   try {
     console.log("Creating smart wallet for user using OnchainKit");
     console.log("Using project ID:", ONCHAIN_KIT_PROJECT_ID);
 
-    // In a real implementation, this would use the actual OnchainKit library:
-    // -----------------------------------------------------------------
+    // In a production environment, this would use the OnchainKit library
+    // For demonstration, we create a sample wallet address
+    
+    // IMPORTANT: In production code, replace this with:
     // import { OnchainKit } from "@coinbase/onchainkit";
-    // 
-    // // Initialize OnchainKit with your project ID from Coinbase
     // const onchainKit = new OnchainKit({ 
     //   projectId: ONCHAIN_KIT_PROJECT_ID,
-    //   network: "base-mainnet" // Or "base-sepolia" for testnet
+    //   network: "base-mainnet" 
     // });
-    // 
-    // // Create a wallet - this generates a smart contract wallet
     // const smartWallet = await onchainKit.createWallet();
-    // const walletAddress = smartWallet.address;
-    // -----------------------------------------------------------------
+    // return { data: { address: smartWallet.address }, error: null };
     
     // For demo purposes, we'll simulate the wallet creation
     const walletAddress = `0x${Array.from({length: 40}, () => 
@@ -91,21 +87,24 @@ export async function createSmartWallet() {
 
 /**
  * Fund a smart wallet using the Coinbase Pay widget
- * This function handles the funding process and returns when complete
+ * Note: In a real implementation, this would use OnchainKit's funding widget
  */
 export async function fundSmartWallet(walletAddress: string, amount: number) {
   try {
     console.log(`Funding smart wallet ${walletAddress} with ${amount} USDC`);
     
-    // In a real implementation, we'd use OnchainKit's funding widget:
-    // -----------------------------------------------------------------
-    // const txStatus = await onchainKit.fundWallet({
+    // IMPORTANT: In production code, replace this with:
+    // import { OnchainKit } from "@coinbase/onchainkit";
+    // const onchainKit = new OnchainKit({ 
+    //   projectId: ONCHAIN_KIT_PROJECT_ID,
+    //   network: "base-mainnet" 
+    // });
+    // return await onchainKit.fundWallet({
     //   destinationAddress: walletAddress,
     //   destinationChain: "base-mainnet",
     //   tokenAmount: amount.toString(),
     //   tokenSymbol: "USDC"
     // });
-    // -----------------------------------------------------------------
     
     // For demo purposes, we'll simulate a successful funding
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -127,74 +126,43 @@ export async function fundSmartWallet(walletAddress: string, amount: number) {
 }
 
 /**
- * Approve USDC spending from a smart wallet
- * In a real implementation, this would use OnchainKit's smart wallet methods
+ * Send USDC from user wallet to host wallet using OnchainKit
+ * This function handles the approval and transfer in a single operation
  */
-export async function approveUSDCSpending(
+export async function sendUSDCFromSmartWallet(
   smartWalletAddress: string,
   hostWalletAddress: string,
   amount: number
 ) {
   try {
-    console.log(`Approving ${amount} USDC spending from ${smartWalletAddress} to ${hostWalletAddress}`);
+    console.log(`Sending ${amount} USDC from ${smartWalletAddress} to ${hostWalletAddress}`);
     
-    // In a real app with OnchainKit, we would use:
-    // -----------------------------------------------------------------
-    // const onchainKit = new OnchainKit({ projectId: ONCHAIN_KIT_PROJECT_ID });
-    // const smartWallet = await onchainKit.getWallet(smartWalletAddress);
-    // 
-    // // Approve the USDC contract to spend tokens
-    // const txHash = await smartWallet.approveToken({
-    //   tokenAddress: USDC_ADDRESS,
-    //   spender: hostWalletAddress,
-    //   amount: amount.toString()
+    // IMPORTANT: In production code, replace this with:
+    // import { OnchainKit } from "@coinbase/onchainkit";
+    // const onchainKit = new OnchainKit({ 
+    //   projectId: ONCHAIN_KIT_PROJECT_ID,
+    //   network: "base-mainnet" 
     // });
-    // -----------------------------------------------------------------
-    
-    // Simulate approval delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    return {
-      data: {
-        success: true
-      },
-      error: null
-    };
-  } catch (error) {
-    console.error('Error approving USDC spending:', error);
-    return {
-      data: null,
-      error
-    };
-  }
-}
-
-/**
- * Send USDC from user wallet to host wallet
- * In a real implementation, this would integrate with OnchainKit's wallet methods
- */
-export async function sendUSDCToHost(
-  userWalletAddress: string,
-  hostWalletAddress: string,
-  amount: number
-) {
-  try {
-    console.log(`Sending ${amount} USDC from ${userWalletAddress} to ${hostWalletAddress}`);
-    
-    // In a real app with OnchainKit, we would use:
-    // -----------------------------------------------------------------
-    // const onchainKit = new OnchainKit({ projectId: ONCHAIN_KIT_PROJECT_ID });
-    // const smartWallet = await onchainKit.getWallet(userWalletAddress);
-    // 
+    // const smartWallet = await onchainKit.getWallet(smartWalletAddress);
+    //
     // // Send USDC from the smart wallet to the host
     // const txHash = await smartWallet.transferToken({
     //   tokenAddress: USDC_ADDRESS,
     //   to: hostWalletAddress,
     //   amount: amount.toString()
     // });
-    // -----------------------------------------------------------------
+    //
+    // return { 
+    //   data: {
+    //     transactionHash: txHash,
+    //     status: 'success',
+    //     amount: amount.toString(),
+    //     currency: 'USDC'
+    //   }, 
+    //   error: null 
+    // };
     
-    // Simulate blockchain transaction delay
+    // For demo purposes, we'll simulate blockchain transaction delay
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Generate a mock transaction hash
