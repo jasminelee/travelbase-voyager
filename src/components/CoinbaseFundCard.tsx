@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "./ui/button";
 import { Wallet, Loader2 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
@@ -16,20 +16,6 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
   const [loading, setLoading] = useState(false);
   const [showCard, setShowCard] = useState(false);
   const { toast } = useToast();
-  
-  // Client API key for Onchain Commerce
-  // Note: This key is not directly passed to FundCard as a prop since it doesn't support clientKey
-  const CLIENT_API_KEY = "Tnq36rR4efG5KGwn0XHApBG7TIMBxyrz";
-
-  useEffect(() => {
-    // Initialize any required scripts or dependencies
-    // This is similar to how the template initializes its environment
-    console.log("Coinbase Fund Card initialized with currency:", currency);
-    
-    // If the onchainkit library requires client key initialization, it should be done
-    // at the application level or through their recommended initialization method
-    // rather than as a prop on the FundCard component
-  }, [currency]);
 
   const handleInitiatePayment = () => {
     setLoading(true);
