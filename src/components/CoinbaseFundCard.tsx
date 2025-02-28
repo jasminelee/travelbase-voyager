@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from "./ui/button";
 import { Wallet, Loader2 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
-import { FundCard, type LifecycleStatus } from '@coinbase/onchainkit/fund';
+import { FundCard } from '@coinbase/onchainkit/fund';
 
 interface CoinbaseFundCardProps {
   amount: number;
@@ -71,12 +71,10 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
     // Default to ETH for now, will expand for multi-currency
     return {
       assetSymbol: "ETH",
-      // FundCard expects string amount
-      amount: amount.toString()
     };
   };
 
-  const { assetSymbol, amount: formattedAmount } = getAssetDetails();
+  const { assetSymbol } = getAssetDetails();
 
   return (
     <div className="w-full">
@@ -102,15 +100,14 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
         <div className="bg-white p-4 rounded-lg shadow-lg">
           <FundCard
             assetSymbol={assetSymbol}
-            amount={formattedAmount}
             country="US"
-            headerText={`Pay ${formattedAmount} ${assetSymbol} for this experience`}
-            buttonText={`Pay ${formattedAmount} ${assetSymbol}`}
+            headerText={`Buy ETH to complete your payment`}
+            buttonText={`Buy ETH`}
             onSuccess={handleSuccess}
             onError={handleError}
-            onStatus={(status: LifecycleStatus) => {
+            onStatus={(status: string) => {
               console.log("Payment status:", status);
-              if (status && status.toString() === 'exit') {
+              if (status === 'exit') {
                 handleExit();
               }
             }}
