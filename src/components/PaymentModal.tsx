@@ -83,6 +83,7 @@ export default function PaymentModal({
       console.log("Creating booking with experience ID:", experienceId);
       console.log("User ID:", user.id);
       console.log("Booking details:", bookingDetails);
+      console.log("Host wallet address:", hostWalletAddress);
 
       // Create booking in the database
       const { data: bookingData, error: bookingError } = await supabase
@@ -107,9 +108,8 @@ export default function PaymentModal({
         setBookingId(newBookingId);
         
         console.log("Created booking with ID:", newBookingId);
-        console.log("Host wallet address:", hostWalletAddress);
         
-        // Create initial payment record with the hostWalletAddress
+        // Create initial payment record with the host wallet address
         const { error: paymentError } = await supabase
           .from('payments')
           .insert({
@@ -209,10 +209,14 @@ export default function PaymentModal({
       console.log("To host wallet:", hostWalletAddress);
       console.log("Amount:", bookingDetails.totalPrice);
       
+      if (!hostWalletAddress) {
+        throw new Error("Host wallet address is required for P2P payment");
+      }
+      
       // Send USDC from user to host
       const { data, error } = await sendUSDCToHost(
         tempWalletAddress,
-        hostWalletAddress || "",
+        hostWalletAddress,
         bookingDetails.totalPrice
       );
       
@@ -304,7 +308,7 @@ export default function PaymentModal({
                   {isProcessingPayment ? 'Processing...' : 'Pay with Connected Wallet'}
                 </Button>
                 
-                {/* Option 2: For users without a wallet - fund with Coinbase */}
+                {/* Option 2: For users without a wallet - create a smart wallet and fund with Coinbase */}
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300" />
@@ -324,7 +328,7 @@ export default function PaymentModal({
               </div>
               
               <p className="text-xs text-gray-500 text-center mt-2">
-                Your payment will be sent directly to the host.
+                Your payment will be sent directly to the host's wallet.
               </p>
             </div>
           )}

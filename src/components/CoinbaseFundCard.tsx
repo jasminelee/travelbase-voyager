@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Wallet, Loader2 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import { FundCard } from '@coinbase/onchainkit/fund';
+import { createSmartWallet, approveUSDCSpending, sendUSDCToHost } from '../utils/coinbase';
 
 interface CoinbaseFundCardProps {
   amount: number;
@@ -22,30 +23,113 @@ interface LifecycleStatus {
 const CoinbaseFundCard = ({ amount, currency, hostWalletAddress, onSuccess, onError }: CoinbaseFundCardProps) => {
   const [loading, setLoading] = useState(false);
   const [showCard, setShowCard] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [smartWalletAddress, setSmartWalletAddress] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const handleInitiatePayment = () => {
-    setLoading(true);
-    setShowCard(true);
+  const handleInitiatePayment = async () => {
+    try {
+      setLoading(true);
+      
+      // Step 1: Create a smart wallet for the user
+      const { data: walletData, error: walletError } = await createSmartWallet();
+      
+      if (walletError || !walletData) {
+        throw new Error(walletError?.message || "Failed to create smart wallet");
+      }
+      
+      // Store the smart wallet address
+      setSmartWalletAddress(walletData.address);
+      console.log("Created smart wallet with address:", walletData.address);
+      
+      toast({
+        title: "Smart wallet created",
+        description: "Now you can fund it with USDC to complete your payment",
+      });
+      
+      // Step 2: Show the fund card to allow the user to buy USDC
+      setShowCard(true);
+    } catch (error) {
+      console.error("Error initiating payment:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      
+      if (onError) {
+        onError(errorMessage);
+      }
+      
+      toast({
+        title: "Error creating wallet",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSuccess = (data: any) => {
-    console.log("Payment successful:", data);
-    // Extract transaction hash if available
-    const txHash = data?.transaction?.hash || 'transaction-completed';
-    
-    if (onSuccess) {
-      onSuccess(txHash);
+  const handleFundSuccess = async (data: any) => {
+    try {
+      console.log("Funding successful:", data);
+      setProcessingPayment(true);
+      
+      // Step 3: Approve USDC spending
+      if (!smartWalletAddress) {
+        throw new Error("Smart wallet address not found");
+      }
+      
+      const { error: approvalError } = await approveUSDCSpending(
+        smartWalletAddress,
+        hostWalletAddress,
+        amount
+      );
+      
+      if (approvalError) {
+        throw new Error("Failed to approve USDC spending");
+      }
+      
+      // Step 4: Send USDC to host
+      const { data: txData, error: txError } = await sendUSDCToHost(
+        smartWalletAddress,
+        hostWalletAddress,
+        amount
+      );
+      
+      if (txError || !txData) {
+        throw new Error(txError?.message || "Failed to send USDC");
+      }
+      
+      console.log("Payment successful:", txData);
+      
+      // Extract transaction hash
+      const txHash = txData.transactionHash;
+      
+      if (onSuccess) {
+        onSuccess(txHash);
+      }
+      
+      toast({
+        title: "Payment successful",
+        description: `Your USDC payment has been sent to the host.`,
+        variant: "default",
+      });
+      
+      setShowCard(false);
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      
+      if (onError) {
+        onError(errorMessage);
+      }
+      
+      toast({
+        title: "Payment error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingPayment(false);
     }
-    
-    toast({
-      title: "Payment successful",
-      description: `Your USDC payment has been sent to the host.`,
-      variant: "default",
-    });
-    
-    setShowCard(false);
-    setLoading(false);
   };
 
   const handleError = (error: any) => {
@@ -61,12 +145,14 @@ const CoinbaseFundCard = ({ amount, currency, hostWalletAddress, onSuccess, onEr
       variant: "destructive",
     });
     
+    setProcessingPayment(false);
     setLoading(false);
   };
 
   const handleExit = () => {
     setShowCard(false);
     setLoading(false);
+    setProcessingPayment(false);
     toast({
       title: "Payment cancelled",
       description: "You've cancelled the payment process.",
@@ -84,38 +170,62 @@ const CoinbaseFundCard = ({ amount, currency, hostWalletAddress, onSuccess, onEr
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
+              Creating wallet...
             </>
           ) : (
             <>
               <Wallet className="mr-2 h-4 w-4" />
-              Pay with USDC
+              Buy USDC to Pay
             </>
           )}
         </Button>
       ) : (
         <div className="bg-white p-4 rounded-lg shadow-lg">
-          <FundCard
-            assetSymbol="USDC"
-            country="US"
-            headerText={`Buy USDC to complete your payment`}
-            buttonText={`Buy USDC`}
-            onSuccess={handleSuccess}
-            onError={handleError}
-            onStatus={(status: LifecycleStatus) => {
-              console.log("Payment status:", status);
-              if (status && status.statusName === 'exit') {
-                handleExit();
-              }
-            }}
-          />
-          <Button
-            variant="outline"
-            className="mt-4 w-full"
-            onClick={handleExit}
-          >
-            Cancel
-          </Button>
+          {processingPayment ? (
+            <div className="flex flex-col items-center justify-center py-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+              <p className="text-sm text-center">
+                Processing your payment...
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="mb-4">
+                <h3 className="font-medium text-sm mb-1">Your smart wallet is ready</h3>
+                <p className="text-xs text-gray-500">
+                  Now you can buy USDC to complete your payment
+                </p>
+                {smartWalletAddress && (
+                  <div className="mt-2 p-2 bg-gray-50 rounded-md">
+                    <p className="text-xs font-mono truncate">
+                      {smartWalletAddress}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <FundCard
+                assetSymbol="USDC"
+                country="US"
+                headerText={`Buy USDC to complete your payment`}
+                buttonText={`Buy USDC`}
+                onSuccess={handleFundSuccess}
+                onError={handleError}
+                onStatus={(status: LifecycleStatus) => {
+                  console.log("Payment status:", status);
+                  if (status && status.statusName === 'exit') {
+                    handleExit();
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                className="mt-4 w-full"
+                onClick={handleExit}
+              >
+                Cancel
+              </Button>
+            </>
+          )}
         </div>
       )}
     </div>
