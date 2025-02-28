@@ -92,35 +92,44 @@ const Bookings = () => {
     try {
       setFetchingBookings(true);
       
-      const { data, error } = await supabase
+      // First, get all the bookings with their experience data
+      const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
           *,
           experience:experience_id (
             id, title, location, price, currency, images
-          ),
-          payment:id (
-            id, status, amount, currency, transaction_hash, wallet_address
           )
         `)
         .eq('user_id', user?.id)
         .order('start_date', { ascending: true });
         
-      if (error) throw error;
+      if (bookingsError) throw bookingsError;
       
-      // Make sure to transform or filter data to ensure it matches the Booking type
-      // Particularly handling cases where payment might be an error object
-      const validBookings = (data || []).map((booking: any) => {
-        // Ensure payment is either null or a valid Payment object
-        return {
-          ...booking,
-          payment: booking.payment && typeof booking.payment === 'object' && !booking.payment.error 
-            ? booking.payment 
-            : null
-        };
-      }) as Booking[];
+      if (!bookingsData || bookingsData.length === 0) {
+        setBookings([]);
+        return;
+      }
+
+      // Now fetch the payment data for each booking
+      const bookingsWithPayments = await Promise.all(
+        bookingsData.map(async (booking) => {
+          const { data: paymentData, error: paymentError } = await supabase
+            .from('payments')
+            .select('*')
+            .eq('booking_id', booking.id)
+            .maybeSingle();
+            
+          if (paymentError) {
+            console.error('Error fetching payment:', paymentError);
+            return { ...booking, payment: null };
+          }
+          
+          return { ...booking, payment: paymentData || null };
+        })
+      );
       
-      setBookings(validBookings);
+      setBookings(bookingsWithPayments as Booking[]);
     } catch (error) {
       console.error('Error fetching bookings:', error);
       toast({
