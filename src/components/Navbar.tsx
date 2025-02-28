@@ -1,11 +1,24 @@
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X, Wallet } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, X, Wallet, UserCircle, LogOut } from 'lucide-react';
+import { useAuth } from './AuthContext';
+import { Button } from './ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { useToast } from '../hooks/use-toast';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -15,6 +28,23 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed out",
+        description: "You have been successfully signed out",
+      });
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "There was a problem signing out",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <header 
@@ -59,12 +89,43 @@ const Navbar = () => {
           >
             Become a Host
           </Link>
-          <button 
-            className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/30 hover:bg-white/30 transition-colors"
-          >
-            <Wallet size={18} className={isScrolled ? 'text-primary' : 'text-white'} />
-            <span className={isScrolled ? 'text-gray-800' : 'text-white'}>Connect Wallet</span>
-          </button>
+          
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/30 hover:bg-white/30 transition-colors">
+                  <UserCircle size={18} className={isScrolled ? 'text-primary' : 'text-white'} />
+                  <span className={isScrolled ? 'text-gray-800' : 'text-white'}>Account</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/profile">My Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/bookings">My Bookings</Link>
+                </DropdownMenuItem>
+                {user && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/wallet">Connect Wallet</Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button 
+              onClick={() => navigate('/auth')}
+              className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/30 hover:bg-white/30 transition-colors"
+            >
+              <Wallet size={18} className={isScrolled ? 'text-primary' : 'text-white'} />
+              <span className={isScrolled ? 'text-gray-800' : 'text-white'}>Sign In</span>
+            </Button>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -104,10 +165,53 @@ const Navbar = () => {
               >
                 Become a Host
               </Link>
-              <button className="flex items-center space-x-2 bg-primary/10 px-4 py-2 rounded-full text-primary">
-                <Wallet size={18} />
-                <span>Connect Wallet</span>
-              </button>
+              
+              {user ? (
+                <>
+                  <Link 
+                    to="/profile" 
+                    className="text-gray-800 hover:text-primary transition-colors py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    My Profile
+                  </Link>
+                  <Link 
+                    to="/bookings" 
+                    className="text-gray-800 hover:text-primary transition-colors py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    My Bookings
+                  </Link>
+                  <Link 
+                    to="/wallet" 
+                    className="text-gray-800 hover:text-primary transition-colors py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Connect Wallet
+                  </Link>
+                  <button 
+                    onClick={() => {
+                      handleSignOut();
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center space-x-2 text-destructive hover:text-destructive/90 py-2"
+                  >
+                    <LogOut size={18} />
+                    <span>Sign Out</span>
+                  </button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => {
+                    navigate('/auth');
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex items-center space-x-2 bg-primary/10 px-4 py-2 rounded-full text-primary"
+                >
+                  <Wallet size={18} />
+                  <span>Sign In</span>
+                </Button>
+              )}
             </div>
           </div>
         )}
