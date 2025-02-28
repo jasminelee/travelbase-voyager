@@ -45,6 +45,15 @@ type Experience = {
   images: string[];
 };
 
+type Payment = {
+  id: string;
+  status: string;
+  amount: number;
+  currency: string;
+  transaction_hash: string | null;
+  wallet_address: string | null;
+};
+
 type Booking = {
   id: string;
   experience_id: string;
@@ -53,17 +62,10 @@ type Booking = {
   total_price: number;
   status: string;
   created_at: string;
+  user_id: string;
+  updated_at: string;
   experience: Experience;
   payment: Payment | null;
-};
-
-type Payment = {
-  id: string;
-  status: string;
-  amount: number;
-  currency: string;
-  transaction_hash: string | null;
-  wallet_address: string | null;
 };
 
 const Bookings = () => {
@@ -106,7 +108,19 @@ const Bookings = () => {
         
       if (error) throw error;
       
-      setBookings(data || []);
+      // Make sure to transform or filter data to ensure it matches the Booking type
+      // Particularly handling cases where payment might be an error object
+      const validBookings = (data || []).map((booking: any) => {
+        // Ensure payment is either null or a valid Payment object
+        return {
+          ...booking,
+          payment: booking.payment && typeof booking.payment === 'object' && !booking.payment.error 
+            ? booking.payment 
+            : null
+        };
+      }) as Booking[];
+      
+      setBookings(validBookings);
     } catch (error) {
       console.error('Error fetching bookings:', error);
       toast({
@@ -225,6 +239,8 @@ const Bookings = () => {
                             key={booking.id} 
                             booking={booking} 
                             refreshBookings={fetchBookings}
+                            getStatusBadge={getStatusBadge}
+                            getPaymentStatusIcon={getPaymentStatusIcon}
                           />
                         ))}
                       </div>
@@ -251,6 +267,8 @@ const Bookings = () => {
                             key={booking.id} 
                             booking={booking} 
                             refreshBookings={fetchBookings}
+                            getStatusBadge={getStatusBadge}
+                            getPaymentStatusIcon={getPaymentStatusIcon}
                             isPast
                           />
                         ))}
@@ -269,15 +287,21 @@ const Bookings = () => {
   );
 };
 
+type BookingCardProps = { 
+  booking: Booking; 
+  refreshBookings: () => Promise<void>;
+  getStatusBadge: (status: string) => React.ReactNode;
+  getPaymentStatusIcon: (status: string | undefined) => React.ReactNode;
+  isPast?: boolean;
+};
+
 const BookingCard = ({ 
   booking, 
   refreshBookings,
+  getStatusBadge,
+  getPaymentStatusIcon,
   isPast = false 
-}: { 
-  booking: Booking; 
-  refreshBookings: () => Promise<void>;
-  isPast?: boolean;
-}) => {
+}: BookingCardProps) => {
   const { toast } = useToast();
   const [cancelling, setCancelling] = useState(false);
   

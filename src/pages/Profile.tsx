@@ -19,6 +19,8 @@ type Profile = {
   full_name: string | null;
   avatar_url: string | null;
   wallet_address: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 const Profile = () => {
