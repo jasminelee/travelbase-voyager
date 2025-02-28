@@ -8,6 +8,7 @@ import { FundCard } from '@coinbase/onchainkit/fund';
 interface CoinbaseFundCardProps {
   amount: number;
   currency: string;
+  hostWalletAddress: string;
   onSuccess?: (transactionHash: string) => void;
   onError?: (error: string) => void;
 }
@@ -18,7 +19,7 @@ interface LifecycleStatus {
   statusData: any;
 }
 
-const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFundCardProps) => {
+const CoinbaseFundCard = ({ amount, currency, hostWalletAddress, onSuccess, onError }: CoinbaseFundCardProps) => {
   const [loading, setLoading] = useState(false);
   const [showCard, setShowCard] = useState(false);
   const { toast } = useToast();
@@ -39,7 +40,7 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
     
     toast({
       title: "Payment successful",
-      description: `Your payment has been completed.`,
+      description: `Your USDC payment has been sent to the host.`,
       variant: "default",
     });
     
@@ -72,16 +73,6 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
     });
   };
 
-  // Convert currency to appropriate asset symbol for the FundCard
-  const getAssetDetails = () => {
-    // Default to ETH for now, will expand for multi-currency
-    return {
-      assetSymbol: "ETH",
-    };
-  };
-
-  const { assetSymbol } = getAssetDetails();
-
   return (
     <div className="w-full">
       {!showCard ? (
@@ -98,17 +89,17 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
           ) : (
             <>
               <Wallet className="mr-2 h-4 w-4" />
-              Pay with {assetSymbol}
+              Pay with USDC
             </>
           )}
         </Button>
       ) : (
         <div className="bg-white p-4 rounded-lg shadow-lg">
           <FundCard
-            assetSymbol={assetSymbol}
+            assetSymbol="USDC"
             country="US"
-            headerText={`Buy ETH to complete your payment`}
-            buttonText={`Buy ETH`}
+            headerText={`Buy USDC to complete your payment`}
+            buttonText={`Buy USDC`}
             onSuccess={handleSuccess}
             onError={handleError}
             onStatus={(status: LifecycleStatus) => {

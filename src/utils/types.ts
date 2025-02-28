@@ -4,12 +4,13 @@ export interface Experience {
   title: string;
   location: string;
   price: number;
-  currency: string;
+  currency: string; // Will always be USDC now
   description: string;
   host: {
     name: string;
     rating: number;
     image: string;
+    walletAddress?: string; // Added for P2P payments
   };
   images: string[];
   amenities: string[];
@@ -32,10 +33,11 @@ export type PaymentStatus = 'pending' | 'completed' | 'failed';
 export interface PaymentDetails {
   bookingId: string;
   amount: number;
-  currency: string;
+  currency: string; // Will always be USDC
   status: PaymentStatus;
   walletAddress?: string;
   transactionHash?: string;
+  hostWalletAddress?: string; // Added for P2P payments
 }
 
 export interface CoinbaseTransaction {

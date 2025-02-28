@@ -14,11 +14,10 @@ import { Button } from './ui/button';
 import { format } from 'date-fns';
 import { supabase } from '../integrations/supabase/client';
 import { useToast } from '../hooks/use-toast';
-import { Calendar, Clock, Users, Wallet, CreditCard } from 'lucide-react';
+import { Calendar, Clock, Users, Wallet } from 'lucide-react';
 import { BookingDetails } from '../utils/types';
 import CoinbaseFundCard from './CoinbaseFundCard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { createCoinbaseCharge } from '../utils/coinbase';
+import { sendUSDCToHost, updatePaymentStatus } from '../utils/coinbase';
 
 interface PaymentModalProps {
   open: boolean;
@@ -28,6 +27,7 @@ interface PaymentModalProps {
   experiencePrice: number;
   experienceCurrency: string;
   bookingDetails: BookingDetails;
+  hostWalletAddress?: string;
 }
 
 export default function PaymentModal({
@@ -38,6 +38,7 @@ export default function PaymentModal({
   experiencePrice,
   experienceCurrency,
   bookingDetails,
+  hostWalletAddress = '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA', // Default to a placeholder address
 }: PaymentModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -45,8 +46,8 @@ export default function PaymentModal({
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   const [bookingCreated, setBookingCreated] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'direct' | 'commerce'>('direct');
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [userWalletAddress, setUserWalletAddress] = useState<string | null>(null);
 
   const handleCreateBooking = async () => {
     if (!user) {
@@ -109,8 +110,9 @@ export default function PaymentModal({
           .insert({
             booking_id: newBookingId,
             amount: bookingDetails.totalPrice,
-            currency: experienceCurrency,
+            currency: 'USDC', // Always USDC now
             status: 'pending',
+            hostWalletAddress: hostWalletAddress,
           });
         
         if (paymentError) {
@@ -141,13 +143,12 @@ export default function PaymentModal({
       if (!bookingId) return;
 
       // Update payment entry in the database
-      const { error: paymentError } = await supabase
-        .from('payments')
-        .update({
-          status: 'completed',
-          transaction_hash: transactionHash,
-        })
-        .eq('booking_id', bookingId);
+      const { error: paymentError } = await updatePaymentStatus(
+        bookingId,
+        'completed',
+        transactionHash,
+        userWalletAddress || undefined
+      );
 
       if (paymentError) throw paymentError;
 
@@ -161,7 +162,7 @@ export default function PaymentModal({
 
       toast({
         title: "Booking confirmed",
-        description: "Your payment was successful and booking confirmed.",
+        description: "Your USDC payment was successful and booking confirmed.",
       });
 
       // Close modal and redirect to bookings page
@@ -185,38 +186,33 @@ export default function PaymentModal({
     });
   };
 
-  const handleCommercePayment = async () => {
+  const handleDirectP2PPayment = async () => {
     if (!bookingId) return;
     
     try {
-      setIsRedirecting(true);
+      setIsProcessingPayment(true);
       
-      // Create a Coinbase Commerce charge
-      const { data, error } = await createCoinbaseCharge({
-        experienceId,
-        bookingId,
-        amount: bookingDetails.totalPrice,
-        currency: experienceCurrency,
-        description: `Booking for ${experienceTitle} - ${format(bookingDetails.startDate, 'EEEE, MMMM d, yyyy')}`,
-        redirectUrl: `${window.location.origin}/bookings`
-      });
+      // Mock wallet connection - in a real app, use wagmi/viem hooks or OnchainKit
+      const tempWalletAddress = `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      setUserWalletAddress(tempWalletAddress);
+      
+      // Send USDC from user to host
+      const { data, error } = await sendUSDCToHost(
+        tempWalletAddress,
+        hostWalletAddress,
+        bookingDetails.totalPrice
+      );
       
       if (error) throw error;
       
-      // Redirect to the hosted checkout page
-      if (data?.data?.hosted_url) {
-        window.location.href = data.data.hosted_url;
-      } else {
-        throw new Error("No checkout URL received from Coinbase Commerce");
+      if (data?.transactionHash) {
+        await handleDirectPaymentSuccess(data.transactionHash);
       }
     } catch (error) {
-      console.error("Failed to create Coinbase Commerce charge:", error);
-      setIsRedirecting(false);
-      toast({
-        title: "Payment initialization failed",
-        description: "We couldn't set up the payment processing. Please try again or use a different payment method.",
-        variant: "destructive",
-      });
+      console.error("Failed to complete P2P payment:", error);
+      handlePaymentError("Failed to complete the USDC transfer. Please try again.");
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -233,7 +229,7 @@ export default function PaymentModal({
           <DialogTitle>{bookingCreated ? 'Complete Payment' : 'Confirm Booking'}</DialogTitle>
           <DialogDescription>
             {bookingCreated 
-              ? 'Complete your payment to confirm your booking' 
+              ? 'Complete your USDC payment to confirm your booking' 
               : 'Review your booking details before payment'}
           </DialogDescription>
         </DialogHeader>
@@ -261,9 +257,16 @@ export default function PaymentModal({
           <div className="border-t border-gray-200 pt-4">
             <div className="flex justify-between">
               <span>Total</span>
-              <span className="font-medium">{bookingDetails.totalPrice} {experienceCurrency}</span>
+              <span className="font-medium">{bookingDetails.totalPrice} USDC</span>
             </div>
           </div>
+
+          {bookingCreated && (
+            <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
+              <p>Payment will be sent directly to the host's wallet:</p>
+              <p className="font-mono text-xs mt-1 truncate">{hostWalletAddress}</p>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -277,38 +280,38 @@ export default function PaymentModal({
             </Button>
           ) : (
             <div className="w-full space-y-4">
-              <Tabs defaultValue="direct" onValueChange={(value) => setPaymentMethod(value as 'direct' | 'commerce')} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="direct" className="flex items-center gap-1">
-                    <Wallet className="h-4 w-4" /> Direct
-                  </TabsTrigger>
-                  <TabsTrigger value="commerce" className="flex items-center gap-1">
-                    <CreditCard className="h-4 w-4" /> Commerce
-                  </TabsTrigger>
-                </TabsList>
+              <div className="space-y-4">
+                {/* Option 1: Direct P2P USDC payment (for users with a wallet) */}
+                <Button
+                  onClick={handleDirectP2PPayment}
+                  disabled={isProcessingPayment}
+                  className="w-full"
+                >
+                  <Wallet className="mr-2 h-4 w-4" />
+                  {isProcessingPayment ? 'Processing...' : 'Pay with Connected Wallet'}
+                </Button>
                 
-                <TabsContent value="direct" className="mt-4">
-                  <CoinbaseFundCard
-                    amount={bookingDetails.totalPrice}
-                    currency={experienceCurrency}
-                    onSuccess={handleDirectPaymentSuccess}
-                    onError={handlePaymentError}
-                  />
-                </TabsContent>
+                {/* Option 2: For users without a wallet - fund with Coinbase */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-gray-500">Or</span>
+                  </div>
+                </div>
                 
-                <TabsContent value="commerce" className="mt-4">
-                  <Button 
-                    onClick={handleCommercePayment} 
-                    disabled={isRedirecting}
-                    className="w-full"
-                  >
-                    {isRedirecting ? 'Redirecting...' : 'Pay with Coinbase Commerce'}
-                  </Button>
-                </TabsContent>
-              </Tabs>
+                <CoinbaseFundCard
+                  amount={bookingDetails.totalPrice}
+                  currency="USDC"
+                  hostWalletAddress={hostWalletAddress}
+                  onSuccess={handleDirectPaymentSuccess}
+                  onError={handlePaymentError}
+                />
+              </div>
               
               <p className="text-xs text-gray-500 text-center mt-2">
-                Choose how you'd like to complete your payment.
+                Your payment will be sent directly to the host.
               </p>
             </div>
           )}
