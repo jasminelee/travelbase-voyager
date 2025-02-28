@@ -33,7 +33,7 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
     
     toast({
       title: "Payment successful",
-      description: `Your payment of ${amount} ${currency} has been completed.`,
+      description: `Your payment has been completed.`,
       variant: "default",
     });
     
@@ -57,22 +57,6 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
     setLoading(false);
   };
 
-  // Use the cryptocurrency directly if it's a known crypto token
-  // For testnet, we should use the testnet tokens
-  const getAssetSymbol = () => {
-    // On testnet, default to tUSDC (testnet USDC)
-    // Note: On Base Sepolia, you would typically use testnet versions of tokens
-    const knownCryptos = ['tUSDC', 'ETH'];
-    
-    if (knownCryptos.includes(currency)) {
-      return currency;
-    }
-    
-    // For fiat currencies, default to tUSDC on testnet
-    return 'tUSDC'; // Testnet USDC
-  };
-
-  // Handle exit/cancel from the payment component
   const handleExit = () => {
     setShowCard(false);
     setLoading(false);
@@ -80,16 +64,6 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
       title: "Payment cancelled",
       description: "You've cancelled the payment process.",
     });
-  };
-
-  // Format the amount with appropriate precision for the currency
-  const formatAmount = () => {
-    switch(currency) {
-      case 'ETH':
-        return amount.toString(); // Don't round crypto amounts
-      default:
-        return amount.toFixed(2); // Format with 2 decimal places for fiat/USDC
-    }
   };
 
   return (
@@ -108,23 +82,21 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
           ) : (
             <>
               <Wallet className="mr-2 h-4 w-4" />
-              Pay with {getAssetSymbol()}
+              Pay with ETH
             </>
           )}
         </Button>
       ) : (
         <div className="bg-white p-4 rounded-lg shadow-lg">
           <FundCard
-            assetSymbol={getAssetSymbol()}
-            country="US"
-            currency={currency}
-            headerText={`Pay ${formatAmount()} ${currency} for this experience`}
-            buttonText={`Pay ${formatAmount()} ${currency}`}
+            assetSymbol="ETH"
+            amount={amount.toString()}
+            headerText={`Pay ${amount} ETH for this experience`}
+            buttonText={`Pay ${amount} ETH`}
             onSuccess={handleSuccess}
             onError={handleError}
             onStatus={(status) => {
               console.log("Payment status:", status);
-              // Check if status is the string 'exit' without strict type comparison
               if (status && status.toString() === 'exit') {
                 handleExit();
               }
