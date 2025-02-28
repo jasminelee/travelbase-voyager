@@ -14,9 +14,11 @@ import { Button } from './ui/button';
 import { format } from 'date-fns';
 import { supabase } from '../integrations/supabase/client';
 import { useToast } from '../hooks/use-toast';
-import { Calendar, Clock, Users, Wallet } from 'lucide-react';
+import { Calendar, Clock, Users, Wallet, CreditCard } from 'lucide-react';
 import { BookingDetails } from '../utils/types';
 import CoinbaseFundCard from './CoinbaseFundCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { createCoinbaseCharge } from '../utils/coinbase';
 
 interface PaymentModalProps {
   open: boolean;
@@ -43,6 +45,8 @@ export default function PaymentModal({
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   const [bookingCreated, setBookingCreated] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'direct' | 'commerce'>('direct');
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const handleCreateBooking = async () => {
     if (!user) {
@@ -96,7 +100,24 @@ export default function PaymentModal({
       }
 
       if (bookingData && bookingData.length > 0) {
-        setBookingId(bookingData[0].id);
+        const newBookingId = bookingData[0].id;
+        setBookingId(newBookingId);
+        
+        // Create initial payment record
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .insert({
+            booking_id: newBookingId,
+            amount: bookingDetails.totalPrice,
+            currency: experienceCurrency,
+            status: 'pending',
+          });
+        
+        if (paymentError) {
+          console.error("Payment creation error:", paymentError);
+          throw paymentError;
+        }
+
         setBookingCreated(true);
         toast({
           title: "Booking created",
@@ -115,20 +136,18 @@ export default function PaymentModal({
     }
   };
 
-  const handlePaymentSuccess = async (transactionHash: string) => {
+  const handleDirectPaymentSuccess = async (transactionHash: string) => {
     try {
       if (!bookingId) return;
 
-      // Create payment entry in the database
+      // Update payment entry in the database
       const { error: paymentError } = await supabase
         .from('payments')
-        .insert({
-          booking_id: bookingId,
-          amount: bookingDetails.totalPrice,
-          currency: experienceCurrency,
+        .update({
           status: 'completed',
           transaction_hash: transactionHash,
-        });
+        })
+        .eq('booking_id', bookingId);
 
       if (paymentError) throw paymentError;
 
@@ -164,6 +183,41 @@ export default function PaymentModal({
       description: errorMessage || "There was a problem processing your payment. Please try again.",
       variant: "destructive",
     });
+  };
+
+  const handleCommercePayment = async () => {
+    if (!bookingId) return;
+    
+    try {
+      setIsRedirecting(true);
+      
+      // Create a Coinbase Commerce charge
+      const { data, error } = await createCoinbaseCharge({
+        experienceId,
+        bookingId,
+        amount: bookingDetails.totalPrice,
+        currency: experienceCurrency,
+        description: `Booking for ${experienceTitle} - ${format(bookingDetails.startDate, 'EEEE, MMMM d, yyyy')}`,
+        redirectUrl: `${window.location.origin}/bookings`
+      });
+      
+      if (error) throw error;
+      
+      // Redirect to the hosted checkout page
+      if (data?.data?.hosted_url) {
+        window.location.href = data.data.hosted_url;
+      } else {
+        throw new Error("No checkout URL received from Coinbase Commerce");
+      }
+    } catch (error) {
+      console.error("Failed to create Coinbase Commerce charge:", error);
+      setIsRedirecting(false);
+      toast({
+        title: "Payment initialization failed",
+        description: "We couldn't set up the payment processing. Please try again or use a different payment method.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Helper function to validate UUID format
@@ -222,12 +276,41 @@ export default function PaymentModal({
               {isCreatingBooking ? 'Creating booking...' : 'Continue to Payment'}
             </Button>
           ) : (
-            <CoinbaseFundCard
-              amount={bookingDetails.totalPrice}
-              currency={experienceCurrency}
-              onSuccess={handlePaymentSuccess}
-              onError={handlePaymentError}
-            />
+            <div className="w-full space-y-4">
+              <Tabs defaultValue="direct" onValueChange={(value) => setPaymentMethod(value as 'direct' | 'commerce')} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="direct" className="flex items-center gap-1">
+                    <Wallet className="h-4 w-4" /> Direct
+                  </TabsTrigger>
+                  <TabsTrigger value="commerce" className="flex items-center gap-1">
+                    <CreditCard className="h-4 w-4" /> Commerce
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="direct" className="mt-4">
+                  <CoinbaseFundCard
+                    amount={bookingDetails.totalPrice}
+                    currency={experienceCurrency}
+                    onSuccess={handleDirectPaymentSuccess}
+                    onError={handlePaymentError}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="commerce" className="mt-4">
+                  <Button 
+                    onClick={handleCommercePayment} 
+                    disabled={isRedirecting}
+                    className="w-full"
+                  >
+                    {isRedirecting ? 'Redirecting...' : 'Pay with Coinbase Commerce'}
+                  </Button>
+                </TabsContent>
+              </Tabs>
+              
+              <p className="text-xs text-gray-500 text-center mt-2">
+                Choose how you'd like to complete your payment.
+              </p>
+            </div>
           )}
         </DialogFooter>
       </DialogContent>

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from "./ui/button";
 import { Wallet, Loader2 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
-import { FundCard } from '@coinbase/onchainkit/fund';
+import { FundCard, type LifecycleStatus } from '@coinbase/onchainkit/fund';
 
 interface CoinbaseFundCardProps {
   amount: number;
@@ -66,6 +66,18 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
     });
   };
 
+  // Convert currency to appropriate asset symbol for the FundCard
+  const getAssetDetails = () => {
+    // Default to ETH for now, will expand for multi-currency
+    return {
+      assetSymbol: "ETH",
+      // FundCard expects string amount
+      amount: amount.toString()
+    };
+  };
+
+  const { assetSymbol, amount: formattedAmount } = getAssetDetails();
+
   return (
     <div className="w-full">
       {!showCard ? (
@@ -82,20 +94,21 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
           ) : (
             <>
               <Wallet className="mr-2 h-4 w-4" />
-              Pay with ETH
+              Pay with {assetSymbol}
             </>
           )}
         </Button>
       ) : (
         <div className="bg-white p-4 rounded-lg shadow-lg">
           <FundCard
-            assetSymbol="ETH"
-            amount={amount.toString()}
-            headerText={`Pay ${amount} ETH for this experience`}
-            buttonText={`Pay ${amount} ETH`}
+            assetSymbol={assetSymbol}
+            amount={formattedAmount}
+            country="US"
+            headerText={`Pay ${formattedAmount} ${assetSymbol} for this experience`}
+            buttonText={`Pay ${formattedAmount} ${assetSymbol}`}
             onSuccess={handleSuccess}
             onError={handleError}
-            onStatus={(status) => {
+            onStatus={(status: LifecycleStatus) => {
               console.log("Payment status:", status);
               if (status && status.toString() === 'exit') {
                 handleExit();
