@@ -38,7 +38,7 @@ export default function PaymentModal({
   experiencePrice,
   experienceCurrency,
   bookingDetails,
-  hostWalletAddress = '0x6b1B8c4B284b59967A59b7688085315F80Abd098', // Default to the specified wallet address
+  hostWalletAddress,
 }: PaymentModalProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -73,7 +73,7 @@ export default function PaymentModal({
           .from('experiences')
           .select('id')
           .eq('id', experienceId)
-          .single();
+          .maybeSingle();
         
         if (experienceError || !experienceData) {
           throw new Error(`Experience with ID ${experienceId} not found in the database`);
@@ -81,6 +81,8 @@ export default function PaymentModal({
       }
 
       console.log("Creating booking with experience ID:", experienceId);
+      console.log("User ID:", user.id);
+      console.log("Booking details:", bookingDetails);
 
       // Create booking in the database
       const { data: bookingData, error: bookingError } = await supabase
@@ -103,6 +105,9 @@ export default function PaymentModal({
       if (bookingData && bookingData.length > 0) {
         const newBookingId = bookingData[0].id;
         setBookingId(newBookingId);
+        
+        console.log("Created booking with ID:", newBookingId);
+        console.log("Host wallet address:", hostWalletAddress);
         
         // Create initial payment record with the hostWalletAddress
         const { error: paymentError } = await supabase
@@ -142,6 +147,10 @@ export default function PaymentModal({
     try {
       if (!bookingId) return;
 
+      console.log("Processing successful payment for booking:", bookingId);
+      console.log("Transaction hash:", transactionHash);
+      console.log("User wallet:", userWalletAddress);
+
       // Update payment entry in the database
       const { error: paymentError } = await updatePaymentStatus(
         bookingId,
@@ -165,9 +174,9 @@ export default function PaymentModal({
         description: "Your USDC payment was successful and booking confirmed.",
       });
 
-      // Close modal and redirect to bookings page
+      // Close modal and redirect to bookings page with the new booking ID
       onOpenChange(false);
-      navigate('/bookings');
+      navigate(`/bookings?newBooking=${bookingId}`);
     } catch (error) {
       console.error('Error processing successful payment:', error);
       toast({
@@ -196,10 +205,14 @@ export default function PaymentModal({
       const tempWalletAddress = `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
       setUserWalletAddress(tempWalletAddress);
       
+      console.log("Initiating P2P payment from:", tempWalletAddress);
+      console.log("To host wallet:", hostWalletAddress);
+      console.log("Amount:", bookingDetails.totalPrice);
+      
       // Send USDC from user to host
       const { data, error } = await sendUSDCToHost(
         tempWalletAddress,
-        hostWalletAddress,
+        hostWalletAddress || "",
         bookingDetails.totalPrice
       );
       
@@ -261,7 +274,7 @@ export default function PaymentModal({
             </div>
           </div>
 
-          {bookingCreated && (
+          {bookingCreated && hostWalletAddress && (
             <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
               <p>Payment will be sent directly to the host's wallet:</p>
               <p className="font-mono text-xs mt-1 truncate">{hostWalletAddress}</p>
@@ -304,7 +317,7 @@ export default function PaymentModal({
                 <CoinbaseFundCard
                   amount={bookingDetails.totalPrice}
                   currency="USDC"
-                  hostWalletAddress={hostWalletAddress}
+                  hostWalletAddress={hostWalletAddress || ""}
                   onSuccess={handleDirectPaymentSuccess}
                   onError={handlePaymentError}
                 />

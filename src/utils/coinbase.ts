@@ -12,6 +12,11 @@ export async function updatePaymentStatus(
   walletAddress?: string
 ) {
   try {
+    console.log("Updating payment status for booking:", bookingId);
+    console.log("New status:", status);
+    console.log("Transaction hash:", transactionHash);
+    console.log("Wallet address:", walletAddress);
+    
     const updateData: any = { status };
     
     if (transactionHash) {

@@ -136,18 +136,23 @@ const Bookings = () => {
       // Now fetch the payment data for each booking
       const bookingsWithPayments = await Promise.all(
         bookingsData.map(async (booking) => {
-          const { data: paymentData, error: paymentError } = await supabase
-            .from('payments')
-            .select('*')
-            .eq('booking_id', booking.id)
-            .maybeSingle();
+          try {
+            const { data: paymentData, error: paymentError } = await supabase
+              .from('payments')
+              .select('*')
+              .eq('booking_id', booking.id)
+              .maybeSingle();
+              
+            if (paymentError) {
+              console.error('Error fetching payment for booking', booking.id, ':', paymentError);
+              return { ...booking, payment: null };
+            }
             
-          if (paymentError) {
-            console.error('Error fetching payment:', paymentError);
+            return { ...booking, payment: paymentData || null };
+          } catch (error) {
+            console.error('Exception fetching payment for booking', booking.id, ':', error);
             return { ...booking, payment: null };
           }
-          
-          return { ...booking, payment: paymentData || null };
         })
       );
       
