@@ -107,6 +107,8 @@ const Bookings = () => {
     try {
       setFetchingBookings(true);
       
+      console.log("Fetching bookings for user:", user?.id);
+      
       // First, get all the bookings with their experience data
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
@@ -116,13 +118,18 @@ const Bookings = () => {
             id, title, location, price, currency, images
           )
         `)
-        .eq('user_id', user?.id)
-        .order('start_date', { ascending: true });
+        .eq('user_id', user?.id);
         
-      if (bookingsError) throw bookingsError;
+      if (bookingsError) {
+        console.error("Error fetching bookings:", bookingsError);
+        throw bookingsError;
+      }
+      
+      console.log("Bookings data:", bookingsData);
       
       if (!bookingsData || bookingsData.length === 0) {
         setBookings([]);
+        setFetchingBookings(false);
         return;
       }
 
@@ -143,6 +150,8 @@ const Bookings = () => {
           return { ...booking, payment: paymentData || null };
         })
       );
+      
+      console.log("Bookings with payments:", bookingsWithPayments);
       
       // Sort the bookings by date (upcoming first)
       const sortedBookings = bookingsWithPayments.sort((a, b) => 

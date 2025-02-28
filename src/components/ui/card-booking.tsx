@@ -40,6 +40,7 @@ type Payment = {
   currency: string;
   transaction_hash: string | null;
   wallet_address: string | null;
+  hostWalletAddress: string | null;
 };
 
 type Booking = {
