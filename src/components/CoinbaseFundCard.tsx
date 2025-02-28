@@ -18,12 +18,17 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
   const { toast } = useToast();
   
   // Client API key for Onchain Commerce
+  // Note: This key is not directly passed to FundCard as a prop since it doesn't support clientKey
   const CLIENT_API_KEY = "Tnq36rR4efG5KGwn0XHApBG7TIMBxyrz";
 
   useEffect(() => {
     // Initialize any required scripts or dependencies
     // This is similar to how the template initializes its environment
     console.log("Coinbase Fund Card initialized with currency:", currency);
+    
+    // If the onchainkit library requires client key initialization, it should be done
+    // at the application level or through their recommended initialization method
+    // rather than as a prop on the FundCard component
   }, [currency]);
 
   const handleInitiatePayment = () => {
@@ -129,7 +134,6 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
       ) : (
         <div className="bg-white p-4 rounded-lg shadow-lg">
           <FundCard
-            clientKey={CLIENT_API_KEY}
             assetSymbol={getAssetSymbol()}
             country="US"
             currency={currency}
