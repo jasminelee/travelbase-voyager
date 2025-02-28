@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { 
@@ -48,6 +47,13 @@ export default function PaymentModal({
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [userWalletAddress, setUserWalletAddress] = useState<string | null>(null);
+
+  // Debug log for host wallet address
+  useEffect(() => {
+    if (open) {
+      console.log("PaymentModal opened with host wallet address:", hostWalletAddress);
+    }
+  }, [open, hostWalletAddress]);
 
   const handleCreateBooking = async () => {
     if (!user) {

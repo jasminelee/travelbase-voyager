@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -76,6 +75,17 @@ const BookingCard = ({
 }: BookingCardProps) => {
   const { toast } = useToast();
   const [cancelling, setCancelling] = useState(false);
+  
+  // Debug log for payment details
+  useEffect(() => {
+    if (booking.payment) {
+      console.log("Booking payment details:", {
+        paymentId: booking.payment.id,
+        paymentStatus: booking.payment.status,
+        hostWalletAddress: booking.payment.hostWalletAddress
+      });
+    }
+  }, [booking]);
   
   const handleCancelBooking = async () => {
     if (!confirm("Are you sure you want to cancel this booking?")) return;

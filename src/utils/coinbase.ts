@@ -5,8 +5,8 @@ import { supabase } from '../integrations/supabase/client';
 // USDC contract address on Base network
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
 
-// Simulated project ID - in a real app, get this from environment variables
-const ONCHAIN_KIT_PROJECT_ID = "project_id_from_coinbase_onchain_kit";
+// Coinbase OnchainKit project ID
+const ONCHAIN_KIT_PROJECT_ID = "a1792415-47ed-42f9-861b-52c86d6f7a39";
 
 /**
  * Updates the payment status in the database
@@ -51,6 +51,7 @@ export async function updatePaymentStatus(
 export async function createSmartWallet() {
   try {
     console.log("Creating smart wallet for user using OnchainKit");
+    console.log("Using project ID:", ONCHAIN_KIT_PROJECT_ID);
 
     // In a real implementation, this would use the actual OnchainKit library:
     // -----------------------------------------------------------------
