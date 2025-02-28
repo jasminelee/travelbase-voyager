@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from "./ui/button";
 import { Wallet, Loader2 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
-import { FundCard } from '@coinbase/onchainkit/fund';
+import { FundCard } from '@coinbase/onchainkit';
 
 interface CoinbaseFundCardProps {
   amount: number;
@@ -56,6 +56,19 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
     setLoading(false);
   };
 
+  // Determine which cryptocurrency to use based on the currency provided
+  // Map common fiat currencies to appropriate crypto
+  const getAssetSymbol = () => {
+    switch(currency.toUpperCase()) {
+      case 'USD':
+        return 'USDC';
+      case 'EUR':
+        return 'USDC';
+      default:
+        return currency; // Assume it's already a crypto symbol
+    }
+  };
+
   return (
     <div className="w-full">
       {!showCard ? (
@@ -80,9 +93,10 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
         <div className="bg-white p-4 rounded-lg shadow-lg">
           <FundCard
             appId="Voyager"
-            clientKey="Tnq36rR4efG5KGwn0XHApBG7TIMBxyrz"
-            amount={amount.toString()}
+            country="US"
+            assetSymbol={getAssetSymbol()}
             currency={currency}
+            amount={amount.toString()}
             onSuccess={handleSuccess}
             onError={handleError}
             onExit={() => {
