@@ -62,7 +62,7 @@ export type Database = {
           description: string
           duration: string
           featured: boolean | null
-          host_id: string
+          host_id: string | null
           id: string
           images: string[]
           location: string
@@ -80,7 +80,7 @@ export type Database = {
           description: string
           duration: string
           featured?: boolean | null
-          host_id: string
+          host_id?: string | null
           id?: string
           images: string[]
           location: string
@@ -98,7 +98,7 @@ export type Database = {
           description?: string
           duration?: string
           featured?: boolean | null
-          host_id?: string
+          host_id?: string | null
           id?: string
           images?: string[]
           location?: string
