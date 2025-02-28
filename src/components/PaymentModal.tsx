@@ -61,8 +61,21 @@ export default function PaymentModal({
 
       // Ensure experienceId is a valid UUID
       if (!isValidUUID(experienceId)) {
-        throw new Error(`Invalid experience ID format: ${experienceId}`);
+        console.error(`Invalid experience ID format: ${experienceId}`);
+        
+        // Try to verify if the experience exists in the database
+        const { data: experienceData, error: experienceError } = await supabase
+          .from('experiences')
+          .select('id')
+          .eq('id', experienceId)
+          .single();
+        
+        if (experienceError || !experienceData) {
+          throw new Error(`Experience with ID ${experienceId} not found in the database`);
+        }
       }
+
+      console.log("Creating booking with experience ID:", experienceId);
 
       // Create booking in the database
       const { data: bookingData, error: bookingError } = await supabase
@@ -77,7 +90,10 @@ export default function PaymentModal({
         })
         .select();
 
-      if (bookingError) throw bookingError;
+      if (bookingError) {
+        console.error("Booking error details:", bookingError);
+        throw bookingError;
+      }
 
       if (bookingData && bookingData.length > 0) {
         setBookingId(bookingData[0].id);

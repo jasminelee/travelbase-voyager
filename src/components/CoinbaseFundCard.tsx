@@ -111,7 +111,8 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
             onError={handleError}
             onStatus={(status) => {
               console.log("Payment status:", status);
-              if (status === 'exit') {
+              // Check if status is the string 'exit' without strict type comparison
+              if (status && status.toString() === 'exit') {
                 handleExit();
               }
             }}
