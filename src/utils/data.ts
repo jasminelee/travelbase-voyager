@@ -3,7 +3,7 @@ import { Experience } from './types';
 
 export const experienceData: Experience[] = [
   {
-    id: '1',
+    id: '6edcbc9e-1a4a-4970-a970-94cca2a368b3', // Updated to match DB UUID
     title: 'Exclusive Yacht Tour in Santorini',
     location: 'Santorini, Greece',
     price: 299,
@@ -27,7 +27,7 @@ export const experienceData: Experience[] = [
     reviewCount: 127
   },
   {
-    id: '2',
+    id: '2dc97c5b-b2c8-4c4a-89a0-8d2e9f57368d', // Updated to match DB UUID
     title: 'Kyoto Tea Ceremony & Garden Tour',
     location: 'Kyoto, Japan',
     price: 120,
@@ -51,7 +51,7 @@ export const experienceData: Experience[] = [
     reviewCount: 183
   },
   {
-    id: '3',
+    id: 'f2a1abcb-da24-4cdd-8f0f-7b15c029ac18', // Updated to match DB UUID
     title: 'Northern Lights Photography Expedition',
     location: 'Tromsø, Norway',
     price: 250,
@@ -74,7 +74,7 @@ export const experienceData: Experience[] = [
     reviewCount: 164
   },
   {
-    id: '4',
+    id: 'a7b38d6a-5e96-4b51-a5f4-2c4c7e56c5f0', // Updated to match DB UUID
     title: 'Desert Stargazing & Astronomy Night',
     location: 'Marrakech, Morocco',
     price: 85,
@@ -98,7 +98,7 @@ export const experienceData: Experience[] = [
     reviewCount: 148
   },
   {
-    id: '5',
+    id: 'c81d9a8d-54cb-4136-90b5-5e0c1f8c88a6', // Updated to match DB UUID
     title: "Michelin Chef's Table Experience",
     location: 'Barcelona, Spain',
     price: 350,
@@ -121,7 +121,7 @@ export const experienceData: Experience[] = [
     reviewCount: 92
   },
   {
-    id: '6',
+    id: '9e7b4ec0-f2a4-40c3-ac40-9940e96298a5', // Updated to match DB UUID
     title: 'Private Helicopter Tour of the Grand Canyon',
     location: 'Las Vegas, USA',
     price: 499,

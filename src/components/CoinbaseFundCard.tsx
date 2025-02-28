@@ -69,6 +69,16 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
     }
   };
 
+  // Handle exit/cancel from the payment component
+  const handleExit = () => {
+    setShowCard(false);
+    setLoading(false);
+    toast({
+      title: "Payment cancelled",
+      description: "You've cancelled the payment process.",
+    });
+  };
+
   return (
     <div className="w-full">
       {!showCard ? (
@@ -99,15 +109,20 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
             buttonText="Pay now"
             onSuccess={handleSuccess}
             onError={handleError}
-            onExit={() => {
-              setShowCard(false);
-              setLoading(false);
-              toast({
-                title: "Payment cancelled",
-                description: "You've cancelled the payment process.",
-              });
+            onStatus={(status) => {
+              console.log("Payment status:", status);
+              if (status === 'exit') {
+                handleExit();
+              }
             }}
           />
+          <Button
+            variant="outline"
+            className="mt-4 w-full"
+            onClick={handleExit}
+          >
+            Cancel
+          </Button>
         </div>
       )}
     </div>
