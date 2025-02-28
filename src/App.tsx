@@ -5,6 +5,7 @@ import { AuthProvider } from './components/AuthContext';
 import Index from './pages/Index';
 import Auth from './pages/Auth';
 import Experiences from './pages/Experiences';
+import ExperienceDetail from './pages/ExperienceDetail';
 import Profile from './pages/Profile';
 import Bookings from './pages/Bookings';
 import Host from './pages/Host';
@@ -18,6 +19,7 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/experiences" element={<Experiences />} />
+          <Route path="/experience/:id" element={<ExperienceDetail />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/bookings" element={<Bookings />} />
           <Route path="/host" element={<Host />} />
