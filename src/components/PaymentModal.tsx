@@ -61,6 +61,15 @@ export default function PaymentModal({
       return;
     }
 
+    if (!hostWalletAddress) {
+      toast({
+        title: "Host wallet required",
+        description: "The host hasn't set up a wallet address for payments.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsCreatingBooking(true);
 
@@ -140,6 +149,50 @@ export default function PaymentModal({
       });
     } finally {
       setIsCreatingBooking(false);
+    }
+  };
+
+  const handleSmartWalletPaymentSuccess = async (transactionHash: string, walletAddress: string) => {
+    try {
+      if (!bookingId) return;
+
+      console.log("Processing successful payment for booking:", bookingId);
+      console.log("Transaction hash:", transactionHash);
+      console.log("Smart wallet address:", walletAddress);
+
+      // Update payment entry in the database
+      const { error: paymentError } = await updatePaymentStatus(
+        bookingId,
+        'completed',
+        transactionHash,
+        walletAddress
+      );
+
+      if (paymentError) throw paymentError;
+
+      // Update booking status to confirmed
+      const { error: bookingUpdateError } = await supabase
+        .from('bookings')
+        .update({ status: 'confirmed' })
+        .eq('id', bookingId);
+
+      if (bookingUpdateError) throw bookingUpdateError;
+
+      toast({
+        title: "Booking confirmed",
+        description: "Your USDC payment was successful and booking confirmed.",
+      });
+
+      // Close modal and redirect to bookings page with the new booking ID
+      onOpenChange(false);
+      navigate(`/bookings?newBooking=${bookingId}`);
+    } catch (error) {
+      console.error('Error processing successful payment:', error);
+      toast({
+        title: "Payment processing error",
+        description: "Your payment was received but we couldn't update your booking status. Please contact support.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -322,7 +375,7 @@ export default function PaymentModal({
                   amount={bookingDetails.totalPrice}
                   currency="USDC"
                   hostWalletAddress={hostWalletAddress || ""}
-                  onSuccess={handleDirectPaymentSuccess}
+                  onSuccess={handleSmartWalletPaymentSuccess}
                   onError={handlePaymentError}
                 />
               </div>
