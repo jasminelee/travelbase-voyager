@@ -9,7 +9,229 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          created_at: string
+          experience_id: string
+          guests: number
+          id: string
+          start_date: string
+          status: string
+          total_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          experience_id: string
+          guests: number
+          id?: string
+          start_date: string
+          status?: string
+          total_price: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          experience_id?: string
+          guests?: number
+          id?: string
+          start_date?: string
+          status?: string
+          total_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experiences: {
+        Row: {
+          amenities: string[]
+          category: string
+          created_at: string
+          currency: string
+          description: string
+          duration: string
+          featured: boolean | null
+          host_id: string
+          id: string
+          images: string[]
+          location: string
+          price: number
+          rating: number | null
+          review_count: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amenities: string[]
+          category: string
+          created_at?: string
+          currency?: string
+          description: string
+          duration: string
+          featured?: boolean | null
+          host_id: string
+          id?: string
+          images: string[]
+          location: string
+          price: number
+          rating?: number | null
+          review_count?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amenities?: string[]
+          category?: string
+          created_at?: string
+          currency?: string
+          description?: string
+          duration?: string
+          featured?: boolean | null
+          host_id?: string
+          id?: string
+          images?: string[]
+          location?: string
+          price?: number
+          rating?: number | null
+          review_count?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          booking_id: string
+          created_at: string
+          currency: string
+          id: string
+          status: string
+          transaction_hash: string | null
+          updated_at: string
+          wallet_address: string | null
+        }
+        Insert: {
+          amount: number
+          booking_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          status?: string
+          transaction_hash?: string | null
+          updated_at?: string
+          wallet_address?: string | null
+        }
+        Update: {
+          amount?: number
+          booking_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          status?: string
+          transaction_hash?: string | null
+          updated_at?: string
+          wallet_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          username: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+          username?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          username?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          booking_id: string | null
+          comment: string | null
+          created_at: string
+          experience_id: string
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          comment?: string | null
+          created_at?: string
+          experience_id: string
+          id?: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          comment?: string | null
+          created_at?: string
+          experience_id?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
