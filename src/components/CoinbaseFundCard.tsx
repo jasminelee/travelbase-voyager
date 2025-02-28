@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "./ui/button";
 import { Wallet, Loader2 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
@@ -16,6 +16,15 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
   const [loading, setLoading] = useState(false);
   const [showCard, setShowCard] = useState(false);
   const { toast } = useToast();
+  
+  // Client API key for Onchain Commerce
+  const CLIENT_API_KEY = "Tnq36rR4efG5KGwn0XHApBG7TIMBxyrz";
+
+  useEffect(() => {
+    // Initialize any required scripts or dependencies
+    // This is similar to how the template initializes its environment
+    console.log("Coinbase Fund Card initialized with currency:", currency);
+  }, [currency]);
 
   const handleInitiatePayment = () => {
     setLoading(true);
@@ -120,6 +129,7 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
       ) : (
         <div className="bg-white p-4 rounded-lg shadow-lg">
           <FundCard
+            clientKey={CLIENT_API_KEY}
             assetSymbol={getAssetSymbol()}
             country="US"
             currency={currency}
