@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
@@ -55,6 +56,9 @@ export default function PaymentModal({
     }
   }, [open, hostWalletAddress]);
 
+  // Check if host wallet address is available
+  const isHostWalletAvailable = !!hostWalletAddress;
+
   const handleCreateBooking = async () => {
     if (!user) {
       toast({
@@ -67,7 +71,7 @@ export default function PaymentModal({
       return;
     }
 
-    if (!hostWalletAddress) {
+    if (!isHostWalletAvailable) {
       toast({
         title: "Host wallet required",
         description: "The host hasn't set up a wallet address for payments.",
@@ -255,7 +259,7 @@ export default function PaymentModal({
   };
 
   const handleDirectP2PPayment = async () => {
-    if (!bookingId) return;
+    if (!bookingId || !hostWalletAddress) return;
     
     try {
       setIsProcessingPayment(true);
@@ -267,10 +271,6 @@ export default function PaymentModal({
       console.log("Initiating P2P payment from:", tempWalletAddress);
       console.log("To host wallet:", hostWalletAddress);
       console.log("Amount:", bookingDetails.totalPrice);
-      
-      if (!hostWalletAddress) {
-        throw new Error("Host wallet address is required for P2P payment");
-      }
       
       // Send USDC from user to host
       const { data, error } = await sendUSDCToHost(
@@ -337,6 +337,12 @@ export default function PaymentModal({
             </div>
           </div>
 
+          {!isHostWalletAvailable && (
+            <div className="bg-red-50 p-3 rounded-md text-sm text-red-800">
+              <p>This experience cannot be booked because the host hasn't set up a wallet address for payments.</p>
+            </div>
+          )}
+
           {bookingCreated && hostWalletAddress && (
             <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
               <p>Payment will be sent directly to the host's wallet:</p>
@@ -349,7 +355,7 @@ export default function PaymentModal({
           {!bookingCreated ? (
             <Button 
               onClick={handleCreateBooking} 
-              disabled={isCreatingBooking}
+              disabled={isCreatingBooking || !isHostWalletAvailable}
               className="w-full"
             >
               {isCreatingBooking ? 'Creating booking...' : 'Continue to Payment'}
@@ -360,7 +366,7 @@ export default function PaymentModal({
                 {/* Option 1: Direct P2P USDC payment (for users with a wallet) */}
                 <Button
                   onClick={handleDirectP2PPayment}
-                  disabled={isProcessingPayment}
+                  disabled={isProcessingPayment || !hostWalletAddress}
                   className="w-full"
                 >
                   <Wallet className="mr-2 h-4 w-4" />
@@ -377,13 +383,15 @@ export default function PaymentModal({
                   </div>
                 </div>
                 
-                <CoinbaseFundCard
-                  amount={bookingDetails.totalPrice}
-                  currency="USDC"
-                  hostWalletAddress={hostWalletAddress || ""}
-                  onSuccess={handleSmartWalletPaymentSuccess}
-                  onError={handlePaymentError}
-                />
+                {hostWalletAddress && (
+                  <CoinbaseFundCard
+                    amount={bookingDetails.totalPrice}
+                    currency="USDC"
+                    hostWalletAddress={hostWalletAddress}
+                    onSuccess={handleSmartWalletPaymentSuccess}
+                    onError={handlePaymentError}
+                  />
+                )}
               </div>
               
               <p className="text-xs text-gray-500 text-center mt-2">

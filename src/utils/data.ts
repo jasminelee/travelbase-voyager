@@ -1,4 +1,3 @@
-
 import { Experience } from './types';
 import { supabase } from '../integrations/supabase/client';
 
@@ -176,27 +175,34 @@ export async function fetchExperiences(): Promise<Experience[]> {
     }
     
     // Map the database results to the Experience type
-    return data.map((exp) => ({
-      id: exp.id,
-      title: exp.title,
-      location: exp.location,
-      price: exp.price,
-      currency: exp.currency,
-      description: exp.description,
-      host: {
-        name: 'Host', // This would need to be fetched from profiles table
-        rating: 4.9,  // This would need to be calculated or fetched
-        image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop',
-        walletAddress: exp.host_id ? `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}` : undefined // Generate mock wallet address
-      },
-      images: exp.images,
-      amenities: exp.amenities,
-      duration: exp.duration,
-      category: exp.category,
-      featured: exp.featured,
-      rating: exp.rating ? parseFloat(exp.rating.toString()) : undefined,
-      reviewCount: exp.review_count || 0
-    }));
+    return data.map((exp) => {
+      // Try to find a matching experience in our mock data to get the wallet address
+      const mockExp = experienceData.find(mock => mock.id === exp.id);
+      const walletAddress = mockExp?.host.walletAddress || 
+        (exp.host_id ? `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}` : undefined);
+      
+      return {
+        id: exp.id,
+        title: exp.title,
+        location: exp.location,
+        price: exp.price,
+        currency: exp.currency,
+        description: exp.description,
+        host: {
+          name: 'Host', // This would need to be fetched from profiles table
+          rating: 4.9,  // This would need to be calculated or fetched
+          image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop',
+          walletAddress: walletAddress
+        },
+        images: exp.images,
+        amenities: exp.amenities,
+        duration: exp.duration,
+        category: exp.category,
+        featured: exp.featured,
+        rating: exp.rating ? parseFloat(exp.rating.toString()) : undefined,
+        reviewCount: exp.review_count || 0
+      };
+    });
   } catch (error) {
     console.error('Error in fetchExperiences:', error);
     return experienceData; // Fallback to mock data
@@ -208,6 +214,11 @@ export async function fetchExperienceById(id: string): Promise<Experience | unde
   try {
     console.log("Fetching experience with ID:", id);
     
+    // First try to get a mock experience to have wallet address available
+    const mockExp = getExperienceById(id);
+    console.log("Mock experience found:", mockExp ? "yes" : "no");
+    console.log("Mock wallet address:", mockExp?.host.walletAddress);
+    
     // Query the experiences table by ID
     const { data, error } = await supabase
       .from('experiences')
@@ -218,16 +229,17 @@ export async function fetchExperienceById(id: string): Promise<Experience | unde
     if (error || !data) {
       console.error('Error fetching experience by ID:', error);
       // Fallback to mock data
-      const mockExp = getExperienceById(id);
       console.log("Using fallback mock experience with host wallet:", mockExp?.host.walletAddress);
       return mockExp;
     }
     
-    // Get the host wallet address from the mock data as backup
-    const mockWalletAddress = getExperienceById(id)?.host.walletAddress;
+    // Always use the wallet address from the mock data for now
+    // In a real app, this would come from a proper wallet address field in the database
+    const walletAddress = mockExp?.host.walletAddress || 
+      `0x${Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
     
     console.log("Found experience with ID:", id);
-    console.log("Using wallet address:", mockWalletAddress);
+    console.log("Using wallet address:", walletAddress);
     
     return {
       id: data.id,
@@ -240,7 +252,7 @@ export async function fetchExperienceById(id: string): Promise<Experience | unde
         name: 'Host', // This would need to be fetched from profiles table
         rating: 4.9,  // This would need to be calculated or fetched
         image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=250&h=250&auto=format&fit=crop',
-        walletAddress: mockWalletAddress // Use the fallback from mock data
+        walletAddress: walletAddress // Always provide a wallet address
       },
       images: data.images,
       amenities: data.amenities,

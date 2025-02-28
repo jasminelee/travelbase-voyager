@@ -51,6 +51,7 @@ const ExperienceDetail = () => {
           return;
         }
         
+        console.log("Loaded experience with host wallet:", foundExperience.host.walletAddress);
         setExperience(foundExperience);
       } catch (error) {
         console.error("Error loading experience:", error);
@@ -94,6 +95,15 @@ const ExperienceDetail = () => {
   };
 
   const handleBookNow = () => {
+    if (!experience?.host.walletAddress) {
+      toast({
+        title: "Booking unavailable",
+        description: "This experience doesn't have a host wallet set up for payments yet.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const bookingDetails: BookingDetails = {
       experienceId: experience?.id || '',
       startDate,
@@ -335,12 +345,12 @@ const ExperienceDetail = () => {
                   
                   <div className="border-t border-gray-200 pt-4 mb-6">
                     <div className="flex justify-between mb-2">
-                      <div>{experience.price} × {guests} {guests === 1 ? 'guest' : 'guests'}</div>
-                      <div>{experience.price * guests} {experience.currency}</div>
+                      <div>{experience?.price} × {guests} {guests === 1 ? 'guest' : 'guests'}</div>
+                      <div>{experience?.price && experience.price * guests} {experience?.currency}</div>
                     </div>
                     <div className="flex justify-between font-semibold">
                       <div>Total</div>
-                      <div>{experience.price * guests} {experience.currency}</div>
+                      <div>{experience?.price && experience.price * guests} {experience?.currency}</div>
                     </div>
                   </div>
                   
@@ -360,7 +370,7 @@ const ExperienceDetail = () => {
       
       <Footer />
       
-      {showPaymentModal && (
+      {showPaymentModal && experience && (
         <PaymentModal
           open={showPaymentModal}
           onOpenChange={setShowPaymentModal}
@@ -374,6 +384,7 @@ const ExperienceDetail = () => {
             guests,
             totalPrice: experience.price * guests,
           }}
+          hostWalletAddress={experience.host.walletAddress}
         />
       )}
     </div>
