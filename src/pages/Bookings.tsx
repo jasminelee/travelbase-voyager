@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../integrations/supabase/client';
 import { useAuth } from '../components/AuthContext';
 import { useToast } from '../hooks/use-toast';
@@ -31,10 +31,12 @@ import {
   XCircle, 
   CheckCircle2, 
   AlertCircle, 
-  Loader2 
+  Loader2,
+  PartyPopper
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '../components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 
 type Experience = {
   id: string;
@@ -71,10 +73,15 @@ type Booking = {
 const Bookings = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [fetchingBookings, setFetchingBookings] = useState(false);
   const [activeTab, setActiveTab] = useState('upcoming');
+  
+  // Get the new booking ID from URL params if it exists
+  const searchParams = new URLSearchParams(location.search);
+  const newBookingId = searchParams.get('newBooking');
   
   useEffect(() => {
     if (!loading && !user) {
@@ -87,6 +94,25 @@ const Bookings = () => {
       fetchBookings();
     }
   }, [user]);
+  
+  useEffect(() => {
+    // Show toast message if a new booking was just made
+    if (newBookingId) {
+      toast({
+        title: "Booking Successful!",
+        description: "Your new experience has been booked. Enjoy your adventure!",
+        variant: "default",
+      });
+      
+      // Set active tab to upcoming to show the new booking
+      setActiveTab('upcoming');
+      
+      // Remove the newBooking parameter from URL after showing notification
+      // This prevents the notification from showing again on page refresh
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [newBookingId, toast]);
   
   const fetchBookings = async () => {
     try {
@@ -193,6 +219,16 @@ const Bookings = () => {
             <p className="text-gray-600 mt-2">View and manage your experience bookings</p>
           </div>
           
+          {newBookingId && (
+            <Alert className="mb-6 border-green-200 bg-green-50">
+              <PartyPopper className="h-5 w-5 text-green-500" />
+              <AlertTitle className="text-green-800">Booking Successful!</AlertTitle>
+              <AlertDescription className="text-green-700">
+                Your experience has been successfully booked. You can view the details below.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {fetchingBookings ? (
             <div className="flex justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -250,6 +286,7 @@ const Bookings = () => {
                             refreshBookings={fetchBookings}
                             getStatusBadge={getStatusBadge}
                             getPaymentStatusIcon={getPaymentStatusIcon}
+                            isHighlighted={booking.id === newBookingId}
                           />
                         ))}
                       </div>
@@ -278,6 +315,7 @@ const Bookings = () => {
                             refreshBookings={fetchBookings}
                             getStatusBadge={getStatusBadge}
                             getPaymentStatusIcon={getPaymentStatusIcon}
+                            isHighlighted={booking.id === newBookingId}
                             isPast
                           />
                         ))}
@@ -301,6 +339,7 @@ type BookingCardProps = {
   refreshBookings: () => Promise<void>;
   getStatusBadge: (status: string) => React.ReactNode;
   getPaymentStatusIcon: (status: string | undefined) => React.ReactNode;
+  isHighlighted?: boolean;
   isPast?: boolean;
 };
 
@@ -309,6 +348,7 @@ const BookingCard = ({
   refreshBookings,
   getStatusBadge,
   getPaymentStatusIcon,
+  isHighlighted = false,
   isPast = false 
 }: BookingCardProps) => {
   const { toast } = useToast();
@@ -346,7 +386,7 @@ const BookingCard = ({
   };
   
   return (
-    <Card>
+    <Card className={`transition-all duration-300 ${isHighlighted ? 'ring-2 ring-primary shadow-lg transform scale-[1.02]' : ''}`}>
       <div className="relative h-48 overflow-hidden rounded-t-lg">
         <img
           src={booking.experience.images[0] || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=800'}
@@ -356,6 +396,11 @@ const BookingCard = ({
         <div className="absolute top-4 right-4">
           {getStatusBadge(booking.status)}
         </div>
+        {isHighlighted && (
+          <div className="absolute top-4 left-4">
+            <Badge className="bg-primary text-white border-primary">New Booking</Badge>
+          </div>
+        )}
       </div>
       
       <CardHeader className="pb-2">
