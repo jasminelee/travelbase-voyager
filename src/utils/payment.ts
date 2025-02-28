@@ -1,45 +1,33 @@
 
 import { BookingDetails, PaymentDetails } from './types';
 
-// This is a mock function that simulates a payment API call
-// In a real implementation, this would connect to Coinbase Onramp API
-export async function processPayment(booking: BookingDetails): Promise<PaymentDetails> {
-  console.log('Processing payment for booking:', booking);
-  
-  // Simulate API call with a delay
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // In a real implementation, this would return actual transaction details
-      resolve({
-        bookingId: Math.random().toString(36).substring(2, 15),
-        amount: booking.totalPrice,
-        currency: 'USDC',
-        status: 'completed',
-        walletAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-        transactionHash: '0x' + Math.random().toString(36).substring(2, 30)
-      });
-    }, 2000);
-  });
-}
-
-// Function to display a QR code for manual payments (fallback option)
+// Function to generate a QR code for manual payments (fallback option)
 export function generatePaymentQRCode(walletAddress: string, amount: number): string {
-  // In a real implementation, this would generate a QR code with payment details
-  // For this MVP, we'll return a placeholder URL
+  // Generate a QR code with payment details
   return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=ethereum:${walletAddress}?amount=${amount}`;
 }
 
-// Function to check payment status (for polling)
-export async function checkPaymentStatus(bookingId: string): Promise<PaymentStatus> {
-  // In a real implementation, this would check the payment status on the blockchain or via Coinbase API
-  console.log('Checking payment status for booking:', bookingId);
+// Function to check if the payment was successful
+export async function verifyPayment(transactionHash: string): Promise<boolean> {
+  console.log('Verifying payment transaction:', transactionHash);
   
-  // Simulate API call with a delay
+  // In a real application, this would verify the transaction on the blockchain
+  // For this demo, we'll simulate a successful verification
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve('completed');
-    }, 1500);
+      resolve(true);
+    }, 1000);
   });
 }
 
-type PaymentStatus = 'pending' | 'completed' | 'failed';
+// Function to format payment amount with currency
+export function formatPaymentAmount(amount: number, currency: string): string {
+  // Format the amount with appropriate currency
+  return `${amount} ${currency}`;
+}
+
+// Function to determine if currency is a cryptocurrency
+export function isCryptoCurrency(currency: string): boolean {
+  const cryptoCurrencies = ['BTC', 'ETH', 'USDC', 'USDT', 'XRP', 'SOL', 'ADA', 'AVAX'];
+  return cryptoCurrencies.includes(currency.toUpperCase());
+}

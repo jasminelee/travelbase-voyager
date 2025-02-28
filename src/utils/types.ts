@@ -37,3 +37,13 @@ export interface PaymentDetails {
   walletAddress?: string;
   transactionHash?: string;
 }
+
+export interface CoinbaseTransaction {
+  hash: string;
+  status: string;
+  amount: string;
+  currency: string;
+  wallet?: {
+    address: string;
+  };
+}

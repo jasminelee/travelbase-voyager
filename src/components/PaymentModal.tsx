@@ -1,85 +1,209 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
-import { Button } from "./ui/button";
-import { Label } from "./ui/label";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { Wallet, ArrowRight, CreditCard, Shield } from "lucide-react";
+
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { format } from 'date-fns';
+import { supabase } from '../integrations/supabase/client';
+import { useToast } from '../hooks/use-toast';
+import { Calendar, Clock, Users, Wallet } from 'lucide-react';
+import { BookingDetails } from '../utils/types';
+import CoinbaseFundCard from './CoinbaseFundCard';
 
 interface PaymentModalProps {
   open: boolean;
-  setOpen: (open: boolean) => void;
-  totalPrice: number;
-  onPaymentSuccess: () => void;
+  onOpenChange: (open: boolean) => void;
+  experienceId: string;
+  experienceTitle: string;
+  experiencePrice: number;
+  experienceCurrency: string;
+  bookingDetails: BookingDetails;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ open, setOpen, totalPrice, onPaymentSuccess }) => {
-  const [paymentMethod, setPaymentMethod] = useState<"wallet" | "credit_card">("wallet");
-  const [processing, setProcessing] = useState(false);
+export default function PaymentModal({
+  open,
+  onOpenChange,
+  experienceId,
+  experienceTitle,
+  experiencePrice,
+  experienceCurrency,
+  bookingDetails,
+}: PaymentModalProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isCreatingBooking, setIsCreatingBooking] = useState(false);
+  const [bookingCreated, setBookingCreated] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(null);
 
-  const handlePayment = async () => {
-    setProcessing(true);
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setProcessing(false);
-    onPaymentSuccess();
-    setOpen(false);
+  const handleCreateBooking = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to book an experience",
+        variant: "destructive",
+      });
+      onOpenChange(false);
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      setIsCreatingBooking(true);
+
+      // Create booking in the database
+      const { data: bookingData, error: bookingError } = await supabase
+        .from('bookings')
+        .insert({
+          experience_id: experienceId,
+          user_id: user.id,
+          start_date: bookingDetails.startDate.toISOString(),
+          guests: bookingDetails.guests,
+          total_price: bookingDetails.totalPrice,
+          status: 'pending',
+        })
+        .select();
+
+      if (bookingError) throw bookingError;
+
+      if (bookingData && bookingData.length > 0) {
+        setBookingId(bookingData[0].id);
+        setBookingCreated(true);
+        toast({
+          title: "Booking created",
+          description: "Your booking has been created. Complete payment to confirm.",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      toast({
+        title: "Booking failed",
+        description: "There was a problem creating your booking. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingBooking(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (transactionHash: string) => {
+    try {
+      if (!bookingId) return;
+
+      // Create payment entry in the database
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .insert({
+          booking_id: bookingId,
+          amount: bookingDetails.totalPrice,
+          currency: experienceCurrency,
+          status: 'completed',
+          transaction_hash: transactionHash,
+        });
+
+      if (paymentError) throw paymentError;
+
+      // Update booking status to confirmed
+      const { error: bookingUpdateError } = await supabase
+        .from('bookings')
+        .update({ status: 'confirmed' })
+        .eq('id', bookingId);
+
+      if (bookingUpdateError) throw bookingUpdateError;
+
+      toast({
+        title: "Booking confirmed",
+        description: "Your payment was successful and booking confirmed.",
+      });
+
+      // Close modal and redirect to bookings page
+      onOpenChange(false);
+      navigate('/bookings');
+    } catch (error) {
+      console.error('Error processing successful payment:', error);
+      toast({
+        title: "Payment processing error",
+        description: "Your payment was received but we couldn't update your booking status. Please contact support.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePaymentError = (errorMessage: string) => {
+    toast({
+      title: "Payment failed",
+      description: errorMessage || "There was a problem processing your payment. Please try again.",
+      variant: "destructive",
+    });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Make Payment</DialogTitle>
+          <DialogTitle>{bookingCreated ? 'Complete Payment' : 'Confirm Booking'}</DialogTitle>
+          <DialogDescription>
+            {bookingCreated 
+              ? 'Complete your payment to confirm your booking' 
+              : 'Review your booking details before payment'}
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+
+        <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <h4 className="text-md font-medium leading-none">Total Amount</h4>
-            <p className="text-sm text-muted-foreground">
-              You are about to pay ${totalPrice} for this experience.
-            </p>
+            <h3 className="font-medium">{experienceTitle}</h3>
+            
+            <div className="flex items-center text-sm text-gray-500">
+              <Calendar className="h-4 w-4 mr-2" />
+              <span>{format(bookingDetails.startDate, 'EEEE, MMMM d, yyyy')}</span>
+            </div>
+            
+            <div className="flex items-center text-sm text-gray-500">
+              <Clock className="h-4 w-4 mr-2" />
+              <span>{format(bookingDetails.startDate, 'h:mm a')}</span>
+            </div>
+            
+            <div className="flex items-center text-sm text-gray-500">
+              <Users className="h-4 w-4 mr-2" />
+              <span>{bookingDetails.guests} {bookingDetails.guests === 1 ? 'Guest' : 'Guests'}</span>
+            </div>
           </div>
-          <div className="space-y-2">
-            <h4 className="text-md font-medium leading-none">Payment Method</h4>
-            <p className="text-sm text-muted-foreground">
-              Choose your preferred payment method.
-            </p>
-            <RadioGroup defaultValue="wallet" className="grid grid-cols-2 gap-2" onValueChange={(value) => setPaymentMethod(value as "wallet" | "credit_card")}>
-              <div className="flex items-center space-x-2 rounded-md border p-3 shadow-sm transition-all hover:bg-accent hover:text-accent-foreground">
-                <RadioGroupItem value="wallet" id="wallet" className="peer sr-only" />
-                <Wallet size={20} className="shrink-0" />
-                <Label htmlFor="wallet">
-                  Crypto Wallet
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2 rounded-md border p-3 shadow-sm transition-all hover:bg-accent hover:text-accent-foreground">
-                <RadioGroupItem value="credit_card" id="credit_card" className="peer sr-only" />
-                <CreditCard size={20} className="shrink-0" />
-                <Label htmlFor="credit_card">
-                  Credit Card
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-          <div className="space-y-2">
-            <h4 className="text-md font-medium leading-none">Security</h4>
-            <p className="text-sm text-muted-foreground">
-              Your payment is secured with the latest encryption technology.
-            </p>
-            <div className="flex items-center space-x-2">
-              <Shield size={20} className="shrink-0 text-green-500" />
-              <span className="text-sm">Secure Payment</span>
+          
+          <div className="border-t border-gray-200 pt-4">
+            <div className="flex justify-between">
+              <span>Total</span>
+              <span className="font-medium">{bookingDetails.totalPrice} {experienceCurrency}</span>
             </div>
           </div>
         </div>
+
         <DialogFooter>
-          <Button disabled={processing} onClick={handlePayment}>
-            {processing ? "Processing..." : "Confirm Payment"}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          {!bookingCreated ? (
+            <Button 
+              onClick={handleCreateBooking} 
+              disabled={isCreatingBooking}
+              className="w-full"
+            >
+              {isCreatingBooking ? 'Creating booking...' : 'Continue to Payment'}
+            </Button>
+          ) : (
+            <CoinbaseFundCard
+              amount={bookingDetails.totalPrice}
+              currency={experienceCurrency}
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+            />
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
-
-export default PaymentModal;
+}
