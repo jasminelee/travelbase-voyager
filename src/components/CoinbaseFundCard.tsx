@@ -95,7 +95,6 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
             assetSymbol={getAssetSymbol()}
             country="US"
             currency={currency}
-            amount={amount.toString()}
             headerText="Complete your payment"
             buttonText="Pay now"
             onSuccess={handleSuccess}

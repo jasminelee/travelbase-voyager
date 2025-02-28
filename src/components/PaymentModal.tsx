@@ -59,6 +59,11 @@ export default function PaymentModal({
     try {
       setIsCreatingBooking(true);
 
+      // Ensure experienceId is a valid UUID
+      if (!isValidUUID(experienceId)) {
+        throw new Error(`Invalid experience ID format: ${experienceId}`);
+      }
+
       // Create booking in the database
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
@@ -143,6 +148,12 @@ export default function PaymentModal({
       description: errorMessage || "There was a problem processing your payment. Please try again.",
       variant: "destructive",
     });
+  };
+
+  // Helper function to validate UUID format
+  const isValidUUID = (uuid: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
   };
 
   return (
