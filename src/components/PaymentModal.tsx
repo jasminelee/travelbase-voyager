@@ -340,9 +340,16 @@ export default function PaymentModal({
                   onSuccess={handleFundSuccess}
                   onError={(error) => {
                     console.error("Funding error:", error);
+                    // Fix: Handle OnrampError type correctly
+                    // OnrampError might have error details in a different property
+                    const errorDescription = 
+                      typeof error === 'object' && error !== null ? 
+                        (error as any).toString?.() || JSON.stringify(error) : 
+                        'There was a problem funding your wallet';
+                        
                     toast({
                       title: "Funding error",
-                      description: error.message || "There was a problem funding your wallet",
+                      description: errorDescription,
                       variant: "destructive",
                     });
                   }}
