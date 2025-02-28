@@ -12,6 +12,12 @@ interface CoinbaseFundCardProps {
   onError?: (error: string) => void;
 }
 
+// Define the LifecycleStatus type based on the expected structure
+interface LifecycleStatus {
+  statusName: string;
+  statusData: any;
+}
+
 const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFundCardProps) => {
   const [loading, setLoading] = useState(false);
   const [showCard, setShowCard] = useState(false);
@@ -105,9 +111,9 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
             buttonText={`Buy ETH`}
             onSuccess={handleSuccess}
             onError={handleError}
-            onStatus={(status: string) => {
+            onStatus={(status: LifecycleStatus) => {
               console.log("Payment status:", status);
-              if (status === 'exit') {
+              if (status && status.statusName === 'exit') {
                 handleExit();
               }
             }}
