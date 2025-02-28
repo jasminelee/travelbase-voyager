@@ -92,11 +92,12 @@ const CoinbaseFundCard = ({ amount, currency, onSuccess, onError }: CoinbaseFund
       ) : (
         <div className="bg-white p-4 rounded-lg shadow-lg">
           <FundCard
-            appId="Voyager"
-            country="US"
             assetSymbol={getAssetSymbol()}
+            country="US"
             currency={currency}
             amount={amount.toString()}
+            headerText="Complete your payment"
+            buttonText="Pay now"
             onSuccess={handleSuccess}
             onError={handleError}
             onExit={() => {
