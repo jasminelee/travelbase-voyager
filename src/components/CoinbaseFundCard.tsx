@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from "./ui/button";
 import { Wallet, Loader2 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
-import { FundCard } from '@coinbase/onchainkit';
+import { FundCard } from '@coinbase/onchainkit/fund';
 
 interface CoinbaseFundCardProps {
   amount: number;
