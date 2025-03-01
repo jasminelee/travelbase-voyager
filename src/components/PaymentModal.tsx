@@ -152,15 +152,15 @@ export default function PaymentModal({
     try {
       setIsProcessingPayment(true);
       
-      // Launch Coinbase Onramp 
-      const { data, error } = await launchCoinbaseOnramp(
+      // Launch real Coinbase Onramp
+      const { success, error } = await launchCoinbaseOnramp(
         bookingDetails.totalPrice,
         hostWalletAddress,
         experienceTitle
       );
       
-      if (error) {
-        throw new Error(error.toString());
+      if (!success) {
+        throw error || new Error("Payment initiation failed");
       }
       
       toast({
@@ -168,11 +168,19 @@ export default function PaymentModal({
         description: "Please complete your payment through the Coinbase Onramp widget.",
       });
       
-      // For demo purposes, we'll simulate a successful payment after a delay
-      setTimeout(() => {
-        updatePaymentStatus(bookingId, 'completed');
-        handlePaymentSuccess();
-      }, 3000);
+      // We don't auto-confirm the payment anymore
+      // The payment will be confirmed via webhook or user confirmation after actual completion
+      
+      // Update payment status to processing
+      await updatePaymentStatus(bookingId, 'pending');
+      
+      // Note: In a production environment, you'd typically:
+      // 1. Set up a webhook to receive payment confirmations from Coinbase
+      // 2. Update the booking status when the webhook is triggered
+      // 3. Notify the user that their booking is confirmed
+      
+      // For demo purposes, we'll keep the payment in "pending" state
+      // until a real confirmation is received
       
     } catch (error) {
       console.error("Error processing payment:", error);
@@ -183,17 +191,25 @@ export default function PaymentModal({
         description: errorMessage,
         variant: "destructive",
       });
+      
+      // Update payment status to failed
+      if (bookingId) {
+        await updatePaymentStatus(bookingId, 'failed');
+      }
     } finally {
       setIsProcessingPayment(false);
     }
   };
 
-  const handlePaymentSuccess = async () => {
+  // This function would typically be called by a webhook in production
+  // For demo purposes, you can add a manual "confirm payment" button
+  const handleManualPaymentConfirmation = async () => {
+    if (!bookingId) return;
+    
     try {
-      if (!bookingId) return;
-
-      console.log("Processing successful payment for booking:", bookingId);
-
+      // Update payment status to completed
+      await updatePaymentStatus(bookingId, 'completed');
+      
       // Update booking status to confirmed
       const { error: bookingUpdateError } = await supabase
         .from('bookings')
@@ -211,10 +227,10 @@ export default function PaymentModal({
       onOpenChange(false);
       navigate(`/bookings?newBooking=${bookingId}`);
     } catch (error) {
-      console.error('Error processing successful payment:', error);
+      console.error('Error confirming payment:', error);
       toast({
-        title: "Payment processing error",
-        description: "Your payment was received but we couldn't update your booking status. Please contact support.",
+        title: "Payment confirmation error",
+        description: "We couldn't update your booking status. Please contact support.",
         variant: "destructive",
       });
     }
@@ -289,14 +305,26 @@ export default function PaymentModal({
                 <p className="text-sm text-center">Processing your payment...</p>
               </div>
             ) : (
-              <Button 
-                onClick={handleStartPayment}
-                className="w-full"
-                disabled={!hostWalletAddress}
-              >
-                <CreditCard className="mr-2 h-4 w-4" />
-                Pay with Coinbase
-              </Button>
+              <div className="w-full space-y-2">
+                <Button 
+                  onClick={handleStartPayment}
+                  className="w-full"
+                  disabled={!hostWalletAddress}
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Pay with Coinbase
+                </Button>
+                
+                {/* For demo purposes only - in production this would be triggered by a webhook */}
+                <Button 
+                  onClick={handleManualPaymentConfirmation}
+                  variant="outline"
+                  className="w-full text-xs"
+                  disabled={!bookingId}
+                >
+                  Demo: Manually confirm payment
+                </Button>
+              </div>
             )
           )}
         </DialogFooter>

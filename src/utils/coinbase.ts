@@ -1,12 +1,11 @@
 
 // This file contains utility functions related to Coinbase payments
 import { supabase } from '../integrations/supabase/client';
+import { CoinbaseTransaction } from './types';
+import { Coinbase } from '@coinbase/coinbase-sdk';
 
 // USDC contract address on Base network
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
-
-// Coinbase OnchainKit project ID
-const ONCHAIN_KIT_PROJECT_ID = "a1792415-47ed-42f9-861b-52c86d6f7a39";
 
 /**
  * Updates the payment status in the database
@@ -51,34 +50,78 @@ export async function launchCoinbaseOnramp(
   amount: number,
   targetAddress: string,
   experienceTitle: string
-) {
+): Promise<{ success: boolean; error?: Error }> {
   try {
     console.log(`Launching Coinbase Onramp for ${amount} USDC to ${targetAddress}`);
     
-    // For demo purposes, simulate the Coinbase Onramp flow with a delay
-    // In production, this would integrate with the actual Coinbase Onramp SDK
-    console.log("Would normally launch Coinbase Onramp with the following configuration:");
-    console.log("- Amount:", amount, "USDC");
-    console.log("- Target wallet:", targetAddress);
-    console.log("- Display name:", `Payment for ${experienceTitle}`);
+    // Create a container for the Coinbase widget
+    const container = document.createElement('div');
+    container.id = 'coinbase-onramp-container';
+    container.style.position = 'fixed';
+    container.style.zIndex = '9999';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    document.body.appendChild(container);
     
-    // Simulate a delay to mimic the onramp process
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Return a success result
-    return {
-      data: {
-        success: true,
-        amount: amount,
-        targetAddress: targetAddress
-      },
-      error: null
-    };
+    // Initialize Coinbase SDK
+    // Using the buy flow as recommended in the documentation
+    try {
+      await Coinbase.buy({
+        appId: 'a1792415-47ed-42f9-861b-52c86d6f7a39', // Your Coinbase project ID
+        widgetParameters: {
+          destinationWallets: [
+            {
+              address: targetAddress,
+              assets: ['USDC'],
+            },
+          ],
+          presetCryptoAmount: amount,
+          defaultNetworkFilter: 'base', // Filter to Base network
+        },
+        onSuccess: () => {
+          console.log('Coinbase onramp success');
+          // Remove container when done
+          if (document.body.contains(container)) {
+            document.body.removeChild(container);
+          }
+          return { success: true };
+        },
+        onExit: () => {
+          console.log('Coinbase onramp closed');
+          // Remove container when closed
+          if (document.body.contains(container)) {
+            document.body.removeChild(container);
+          }
+        },
+        onEvent: (event) => {
+          console.log('Coinbase onramp event:', event);
+        },
+        onError: (error) => {
+          console.error('Coinbase onramp error:', error);
+          // Remove container on error
+          if (document.body.contains(container)) {
+            document.body.removeChild(container);
+          }
+        }
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error initializing Coinbase SDK:', error);
+      // Remove container on error
+      if (document.body.contains(container)) {
+        document.body.removeChild(container);
+      }
+      throw error;
+    }
   } catch (error) {
     console.error('Error launching Coinbase Onramp:', error);
-    return {
-      data: null,
-      error
+    return { 
+      success: false, 
+      error: error instanceof Error ? error : new Error('Unknown error occurred') 
     };
   }
 }
