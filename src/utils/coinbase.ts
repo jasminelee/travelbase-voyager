@@ -1,3 +1,4 @@
+
 // This file contains utility functions related to Coinbase payments
 import { supabase } from '../integrations/supabase/client';
 import { CoinbaseTransaction } from './types';
@@ -65,10 +66,9 @@ export async function launchCoinbaseOneClickBuy(
     // According to https://docs.cdp.coinbase.com/onramp/docs/api-oneclickbuy
     const buyUrl = await getOnrampBuyUrl({
       projectId: projectId,
+      // TypeScript is expecting very specific parameters, so we need to match the expected type
       presetCryptoAmount: amount,
       assets: ['USDC']
-      // Note: API doesn't support direct transfer to another wallet
-      // The user will need to manually transfer to the host wallet after purchase
     });
     
     console.log("Generated Coinbase OneClickBuy URL:", buyUrl);
