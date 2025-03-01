@@ -1,4 +1,3 @@
-
 // This file contains utility functions related to Coinbase payments
 import { supabase } from '../integrations/supabase/client';
 import { useOnchainKit } from '@coinbase/onchainkit';
@@ -158,12 +157,8 @@ export async function launchCoinbaseOnramp(
     // Initialize the Coinbase SDK based on the demo application's implementation
     // Using the correct type definitions for Coinbase constructor options
     const coinbase = new Coinbase({
-      // Project ID for authentication
-      authentication: {
-        projectId: ONCHAIN_KIT_PROJECT_ID
-      },
-      // Configure the onramp parameters
-      onramp: {
+      appId: ONCHAIN_KIT_PROJECT_ID,
+      widgetParameters: {
         destinationWallets: [{
           address: targetAddress,
           assets: ['USDC'],
@@ -175,8 +170,8 @@ export async function launchCoinbaseOnramp(
       }
     });
     
-    // Open the Coinbase Onramp widget using the correct method
-    await coinbase.showWidget();
+    // Open the Coinbase Onramp widget
+    await coinbase.showOnramp();
     
     // Return success (note: actual transaction confirmation would require
     // either webhook integration or user confirmation in a production app)
