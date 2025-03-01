@@ -47,13 +47,17 @@ export async function updatePaymentStatus(
 /**
  * Launch Coinbase one-click buy experience
  * Using the getOnrampBuyUrl from onchainkit
+ * 
+ * Note: This only allows users to purchase crypto for themselves.
+ * It does not directly transfer to the host wallet - that would need to be done
+ * separately after the purchase is completed.
  */
 export async function launchCoinbaseOneClickBuy(
   amount: number,
   targetAddress: string
 ): Promise<{ success: boolean; error?: Error }> {
   try {
-    console.log(`Launching Coinbase OneClickBuy for ${amount} USDC to ${targetAddress}`);
+    console.log(`Launching Coinbase OneClickBuy for ${amount} USDC`);
     
     // Generate UUID for partner user ID if not already in localStorage
     let partnerUserId = localStorage.getItem('cb_ramp_user_id');
@@ -62,19 +66,15 @@ export async function launchCoinbaseOneClickBuy(
       localStorage.setItem('cb_ramp_user_id', partnerUserId);
     }
     
-    // Generate the one-click buy URL using the correct parameters
-    // According to the API docs, we need to use the correct property names
+    // Generate the one-click buy URL using parameters supported by the API
+    // According to https://docs.cdp.coinbase.com/onramp/docs/api-oneclickbuy
     const buyUrl = await getOnrampBuyUrl({
       partnerUserId: partnerUserId,
       presetCryptoAmount: amount,
-      // Using only properties known to be valid according to type definition
-      destinationWallets: [
-        {
-          address: targetAddress,
-          assets: ['USDC'],
-          blockchains: ['base']
-        }
-      ]
+      defaultNetwork: 'base',
+      defaultAsset: 'USDC'
+      // Note: API doesn't support direct transfer to another wallet
+      // The user will need to manually transfer to the host wallet after purchase
     });
     
     console.log("Generated Coinbase OneClickBuy URL:", buyUrl);

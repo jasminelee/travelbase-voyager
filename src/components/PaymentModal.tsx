@@ -14,7 +14,7 @@ import { Button } from './ui/button';
 import { format } from 'date-fns';
 import { supabase } from '../integrations/supabase/client';
 import { useToast } from '../hooks/use-toast';
-import { Calendar, Clock, Users, Loader2, ExternalLink } from 'lucide-react';
+import { Calendar, Clock, Users, Loader2, ExternalLink, AlertTriangle } from 'lucide-react';
 import { BookingDetails } from '../utils/types';
 import { 
   updatePaymentStatus,
@@ -165,7 +165,7 @@ export default function PaymentModal({
       
       toast({
         title: "Payment window opened",
-        description: "Please complete your payment in the Coinbase page that just opened.",
+        description: "Please complete your USDC purchase in the Coinbase page that just opened.",
       });
       
       // Update payment status to pending
@@ -272,9 +272,20 @@ export default function PaymentModal({
           )}
 
           {bookingCreated && hostWalletAddress && (
-            <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
-              <p>Payment will be sent directly to the host's wallet:</p>
-              <p className="font-mono text-xs mt-1 truncate">{hostWalletAddress}</p>
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
+                <p>Payment will be sent to the host's wallet:</p>
+                <p className="font-mono text-xs mt-1 truncate">{hostWalletAddress}</p>
+              </div>
+              
+              <div className="bg-amber-50 p-3 rounded-md text-sm text-amber-800 flex items-start">
+                <AlertTriangle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                <p>
+                  The Coinbase One-Click Buy feature will help you purchase USDC on the Base network. 
+                  After completing your purchase, you'll need to manually transfer the USDC to the 
+                  host's wallet address shown above.
+                </p>
+              </div>
             </div>
           )}
         </div>

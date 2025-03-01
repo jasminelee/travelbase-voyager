@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -181,6 +182,11 @@ const BookingCard = ({
               {booking.payment?.transaction_hash && (
                 <div className="text-xs text-gray-500 truncate max-w-[180px]">
                   Tx: {booking.payment.transaction_hash.substring(0, 12)}...
+                </div>
+              )}
+              {booking.payment?.status === 'pending' && !booking.payment?.transaction_hash && (
+                <div className="text-xs text-amber-600">
+                  Waiting for manual USDC transfer
                 </div>
               )}
             </div>
