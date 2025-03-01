@@ -2,6 +2,10 @@
 // This file contains utility functions related to Coinbase payments
 import { supabase } from '../integrations/supabase/client';
 import { CoinbaseTransaction } from './types';
+import { 
+  fetchOnrampConfig, 
+  fetchOnrampOptions 
+} from '@coinbase/onchainkit/fund';
 
 // USDC contract address on Base network
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
@@ -43,7 +47,7 @@ export async function updatePaymentStatus(
 
 /**
  * Launch Coinbase Onramp experience
- * Based directly on the official Coinbase demo application
+ * Using the approach from the Coinbase demo application
  */
 export async function launchCoinbaseOnramp(
   amount: number,
@@ -66,65 +70,100 @@ export async function launchCoinbaseOnramp(
     document.body.appendChild(container);
     
     try {
-      // Import the onchainkit module dynamically and correctly access its exports
-      const onchainkit = await import('@coinbase/onchainkit');
-      console.log("Available exports from onchainkit:", Object.keys(onchainkit));
+      // Fetch onramp configuration
+      const config = await fetchOnrampConfig();
+      console.log("Onramp config:", config);
       
-      // Check if the module contains OnRamp class
-      if (!onchainkit.OnRamp) {
-        throw new Error("OnRamp not found in @coinbase/onchainkit");
+      // Fetch onramp options for US (default)
+      const options = await fetchOnrampOptions({
+        country: 'US',
+        subdivision: '',
+      });
+      console.log("Onramp options:", options);
+      
+      // Generate UUID for partner user ID if not already in localStorage
+      let partnerUserId = localStorage.getItem('cb_ramp_user_id');
+      if (!partnerUserId) {
+        partnerUserId = crypto.randomUUID();
+        localStorage.setItem('cb_ramp_user_id', partnerUserId);
       }
       
-      // Create a new instance of the OnRamp class
-      const onRampKit = new onchainkit.OnRamp({
-        appId: 'a1792415-47ed-42f9-861b-52c86d6f7a39', // Your Coinbase project ID
-        element: '#coinbase-onramp-container',
-        onSuccess: (data: any) => {
-          console.log('Coinbase onramp success:', data);
-          if (document.body.contains(container)) {
-            document.body.removeChild(container);
-          }
-        },
-        onExit: () => {
-          console.log('Coinbase onramp closed');
-          if (document.body.contains(container)) {
-            document.body.removeChild(container);
-          }
-        },
-        onEvent: (event: any) => {
-          console.log('Coinbase onramp event:', event);
-        },
-        onError: (error: any) => {
-          console.error('Coinbase onramp error:', error);
-          if (document.body.contains(container)) {
-            document.body.removeChild(container);
-          }
-        },
-        theme: 'dark'
-      });
+      // Following the pattern from the demo app, but with a direct script injection
+      // since we're not using their React components
+      const script = document.createElement('script');
+      script.src = 'https://cdn.coinbase.com/onramp/js/coinbase-onramp.prod.js';
+      script.async = true;
       
-      // Set up the purchase configuration
-      await onRampKit.setupPurchase({
-        destinationWallets: [
-          {
-            address: targetAddress,
-            supportedNetworks: ['base'],
-            assets: ['USDC'],
+      // Set up event handlers
+      script.onload = () => {
+        // @ts-ignore - the script adds coinbase to the window object
+        if (window.coinbase && window.coinbase.onramp) {
+          // @ts-ignore
+          const onramp = window.coinbase.onramp.create({
+            appId: 'a1792415-47ed-42f9-861b-52c86d6f7a39',
+            target: '#coinbase-onramp-container',
+            onExit: () => {
+              console.log('Coinbase onramp closed');
+              if (document.body.contains(container)) {
+                document.body.removeChild(container);
+              }
+              if (document.body.contains(script)) {
+                document.body.removeChild(script);
+              }
+            },
+            onSuccess: (result: any) => {
+              console.log('Coinbase onramp success:', result);
+              if (document.body.contains(container)) {
+                document.body.removeChild(container);
+              }
+              if (document.body.contains(script)) {
+                document.body.removeChild(script);
+              }
+            },
+            onEvent: (event: any) => {
+              console.log('Coinbase onramp event:', event);
+            },
+            experienceLoggedIn: 'embedded',
+            experienceLoggedOut: 'popup',
+            defaultExperience: 'embedded',
+            theme: 'dark'
+          });
+          
+          // Open the onramp
+          onramp.open({
+            destinationWallets: [
+              {
+                address: targetAddress,
+                blockchains: ['base'],
+                assets: ['USDC']
+              }
+            ],
+            presetCryptoAmount: amount,
+            partnerUserId: partnerUserId
+          });
+        } else {
+          console.error('Coinbase onramp not available');
+          if (document.body.contains(container)) {
+            document.body.removeChild(container);
           }
-        ],
-        amount: {
-          value: amount.toString(),
-          currencyCode: 'USDC'
-        },
-        preselectedNetwork: 'base'
-      });
+          throw new Error('Coinbase onramp not available');
+        }
+      };
       
-      // Open the Coinbase Onramp experience
-      await onRampKit.open();
+      script.onerror = (error) => {
+        console.error('Error loading Coinbase script:', error);
+        if (document.body.contains(container)) {
+          document.body.removeChild(container);
+        }
+        throw new Error('Failed to load Coinbase script');
+      };
+      
+      // Add the script to the page
+      document.body.appendChild(script);
       
       return { success: true };
     } catch (error) {
-      console.error('Error initializing Coinbase SDK:', error);
+      console.error('Error initializing Coinbase onramp:', error);
       // Remove container on error
       if (document.body.contains(container)) {
         document.body.removeChild(container);
