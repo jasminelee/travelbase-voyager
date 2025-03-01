@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
@@ -13,11 +14,11 @@ import { Button } from './ui/button';
 import { format } from 'date-fns';
 import { supabase } from '../integrations/supabase/client';
 import { useToast } from '../hooks/use-toast';
-import { Calendar, Clock, Users, Loader2, CreditCard } from 'lucide-react';
+import { Calendar, Clock, Users, Loader2, ExternalLink } from 'lucide-react';
 import { BookingDetails } from '../utils/types';
 import { 
   updatePaymentStatus,
-  launchCoinbaseOnramp
+  launchCoinbaseOneClickBuy
 } from '../utils/coinbase';
 
 interface PaymentModalProps {
@@ -152,11 +153,10 @@ export default function PaymentModal({
     try {
       setIsProcessingPayment(true);
       
-      // Call our updated Coinbase Onramp integration
-      const result = await launchCoinbaseOnramp(
+      // Call our Coinbase OneClickBuy integration
+      const result = await launchCoinbaseOneClickBuy(
         bookingDetails.totalPrice,
-        hostWalletAddress,
-        experienceTitle
+        hostWalletAddress
       );
       
       if (!result.success) {
@@ -165,11 +165,12 @@ export default function PaymentModal({
       
       toast({
         title: "Payment window opened",
-        description: "Please complete your payment through the Coinbase Onramp widget.",
+        description: "Please complete your payment in the Coinbase page that just opened.",
       });
       
       // Update payment status to pending
       await updatePaymentStatus(bookingId, 'pending');
+      setIsProcessingPayment(false);
       
     } catch (error) {
       console.error("Error processing payment:", error);
@@ -185,7 +186,7 @@ export default function PaymentModal({
       if (bookingId) {
         await updatePaymentStatus(bookingId, 'failed');
       }
-    } finally {
+      
       setIsProcessingPayment(false);
     }
   };
@@ -300,8 +301,8 @@ export default function PaymentModal({
                   className="w-full"
                   disabled={!hostWalletAddress}
                 >
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Pay with Coinbase
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Buy USDC with Coinbase
                 </Button>
                 
                 {/* For demo purposes only - in production this would be triggered by a webhook */}
