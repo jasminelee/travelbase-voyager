@@ -153,7 +153,7 @@ export default function PaymentModal({
     try {
       setIsProcessingPayment(true);
       
-      // Call our reimplemented launchCoinbaseOnramp function
+      // Call our corrected Coinbase Onramp integration
       const { success, error } = await launchCoinbaseOnramp(
         bookingDetails.totalPrice,
         hostWalletAddress,

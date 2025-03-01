@@ -43,7 +43,7 @@ export async function updatePaymentStatus(
 
 /**
  * Launch Coinbase Onramp experience
- * Following the exact approach from the Coinbase demo application
+ * Based directly on the official Coinbase demo application
  */
 export async function launchCoinbaseOnramp(
   amount: number,
@@ -66,52 +66,59 @@ export async function launchCoinbaseOnramp(
     document.body.appendChild(container);
     
     try {
-      // Import the @coinbase/onchainkit module dynamically
-      const onchainkit = await import('@coinbase/onchainkit');
+      // Import the onchainkit module dynamically
+      const { OnRampKit } = await import('@coinbase/onchainkit');
       
-      // Get the exported components from the module
-      const { CryptoRampSDK } = onchainkit;
-      
-      if (!CryptoRampSDK) {
-        throw new Error("CryptoRampSDK not found in @coinbase/onchainkit");
+      if (!OnRampKit) {
+        throw new Error("OnRampKit not found in @coinbase/onchainkit");
       }
       
-      // Create a new instance of CryptoRampSDK
-      const cryptoRamp = new CryptoRampSDK({
+      // Create a new instance of the OnRampKit
+      const onRampKit = new OnRampKit({
         appId: 'a1792415-47ed-42f9-861b-52c86d6f7a39', // Your Coinbase project ID
-        element: container,
-        darkMode: true,
-        defaultNetwork: 'base',
-        defaultTokenAddress: USDC_ADDRESS,
-        defaultDestinationAddress: targetAddress,
-        defaultAmount: amount.toString(),
-        closeOnExit: true,
-        closeOnSuccess: true,
+        element: '#coinbase-onramp-container',
+        onSuccess: (data: any) => {
+          console.log('Coinbase onramp success:', data);
+          if (document.body.contains(container)) {
+            document.body.removeChild(container);
+          }
+        },
         onExit: () => {
           console.log('Coinbase onramp closed');
           if (document.body.contains(container)) {
             document.body.removeChild(container);
           }
         },
-        onSuccess: (data) => {
-          console.log('Coinbase onramp success:', data);
-          if (document.body.contains(container)) {
-            document.body.removeChild(container);
-          }
-        },
-        onEvent: (event) => {
+        onEvent: (event: any) => {
           console.log('Coinbase onramp event:', event);
         },
-        onError: (error) => {
+        onError: (error: any) => {
           console.error('Coinbase onramp error:', error);
           if (document.body.contains(container)) {
             document.body.removeChild(container);
           }
-        }
+        },
+        theme: 'dark'
+      });
+      
+      // Set up the purchase configuration
+      await onRampKit.setupPurchase({
+        destinationWallets: [
+          {
+            address: targetAddress,
+            supportedNetworks: ['base'],
+            assets: ['USDC'],
+          }
+        ],
+        amount: {
+          value: amount.toString(),
+          currencyCode: 'USDC'
+        },
+        preselectedNetwork: 'base'
       });
       
       // Open the Coinbase Onramp experience
-      await cryptoRamp.open();
+      await onRampKit.open();
       
       return { success: true };
     } catch (error) {
