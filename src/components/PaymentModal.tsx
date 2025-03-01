@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
@@ -152,7 +153,7 @@ export default function PaymentModal({
     try {
       setIsProcessingPayment(true);
       
-      // Launch Coinbase Onramp with updated implementation
+      // Call our reimplemented launchCoinbaseOnramp function
       const { success, error } = await launchCoinbaseOnramp(
         bookingDetails.totalPrice,
         hostWalletAddress,
@@ -168,7 +169,7 @@ export default function PaymentModal({
         description: "Please complete your payment through the Coinbase Onramp widget.",
       });
       
-      // Update payment status to pending (not completed yet)
+      // Update payment status to pending
       await updatePaymentStatus(bookingId, 'pending');
       
       // Note: In a production environment, you'd implement a webhook to receive confirmations

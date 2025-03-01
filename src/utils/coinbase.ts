@@ -1,3 +1,4 @@
+
 // This file contains utility functions related to Coinbase payments
 import { supabase } from '../integrations/supabase/client';
 import { CoinbaseTransaction } from './types';
@@ -42,7 +43,7 @@ export async function updatePaymentStatus(
 
 /**
  * Launch Coinbase Onramp experience
- * Based on the official Coinbase demo application
+ * Following the exact approach from the Coinbase demo application
  */
 export async function launchCoinbaseOnramp(
   amount: number,
@@ -65,35 +66,35 @@ export async function launchCoinbaseOnramp(
     document.body.appendChild(container);
     
     try {
-      // Import the Coinbase SDK dynamically
-      // Based on the CryptoRamp.tsx implementation from the demo
+      // Import the @coinbase/onchainkit module dynamically
       const onchainkit = await import('@coinbase/onchainkit');
       
-      if (!onchainkit.CryptoRamp) {
-        throw new Error("CryptoRamp not found in onchainkit");
+      // Get the exported components from the module
+      const { CryptoRampSDK } = onchainkit;
+      
+      if (!CryptoRampSDK) {
+        throw new Error("CryptoRampSDK not found in @coinbase/onchainkit");
       }
       
-      // Create an instance of CryptoRamp
-      const ramp = new onchainkit.CryptoRamp({
+      // Create a new instance of CryptoRampSDK
+      const cryptoRamp = new CryptoRampSDK({
         appId: 'a1792415-47ed-42f9-861b-52c86d6f7a39', // Your Coinbase project ID
-        containerElement: container, // Pass the container element
+        element: container,
         darkMode: true,
+        defaultNetwork: 'base',
+        defaultTokenAddress: USDC_ADDRESS,
+        defaultDestinationAddress: targetAddress,
+        defaultAmount: amount.toString(),
         closeOnExit: true,
         closeOnSuccess: true,
-        defaultDestinationAddress: targetAddress,
-        defaultTokenAddress: USDC_ADDRESS, // Base USDC
-        defaultNetwork: 'base',
-        defaultAmount: amount.toString(),
         onExit: () => {
           console.log('Coinbase onramp closed');
-          // Clean up on exit
           if (document.body.contains(container)) {
             document.body.removeChild(container);
           }
         },
         onSuccess: (data) => {
           console.log('Coinbase onramp success:', data);
-          // Remove container when done
           if (document.body.contains(container)) {
             document.body.removeChild(container);
           }
@@ -103,15 +104,14 @@ export async function launchCoinbaseOnramp(
         },
         onError: (error) => {
           console.error('Coinbase onramp error:', error);
-          // Remove container on error
           if (document.body.contains(container)) {
             document.body.removeChild(container);
           }
-        },
+        }
       });
       
       // Open the Coinbase Onramp experience
-      await ramp.open();
+      await cryptoRamp.open();
       
       return { success: true };
     } catch (error) {
