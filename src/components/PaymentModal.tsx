@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
@@ -14,7 +13,7 @@ import { Button } from './ui/button';
 import { format } from 'date-fns';
 import { supabase } from '../integrations/supabase/client';
 import { useToast } from '../hooks/use-toast';
-import { Calendar, Clock, Users, Wallet, Loader2, CreditCard } from 'lucide-react';
+import { Calendar, Clock, Users, Loader2, CreditCard } from 'lucide-react';
 import { BookingDetails } from '../utils/types';
 import { 
   updatePaymentStatus,
@@ -164,16 +163,12 @@ export default function PaymentModal({
         throw new Error(error.toString());
       }
       
-      // This is a simplified approach for demo purposes
-      // In a production app, you'd want to use webhooks or another mechanism
-      // to confirm the actual transaction completion
       toast({
         title: "Payment initiated",
         description: "Please complete your payment through the Coinbase Onramp widget.",
       });
       
-      // For demo purposes, we'll assume the payment was successful after the widget is closed
-      // In production, you'd verify the transaction through a webhook or other means
+      // For demo purposes, we'll simulate a successful payment after a delay
       setTimeout(() => {
         updatePaymentStatus(bookingId, 'completed');
         handlePaymentSuccess();

@@ -1,7 +1,6 @@
+
 // This file contains utility functions related to Coinbase payments
 import { supabase } from '../integrations/supabase/client';
-import { useOnchainKit } from '@coinbase/onchainkit';
-import { Coinbase } from '@coinbase/coinbase-sdk';
 
 // USDC contract address on Base network
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
@@ -45,104 +44,6 @@ export async function updatePaymentStatus(
 }
 
 /**
- * Creates a smart wallet for a user using OnchainKit
- */
-export async function createSmartWallet() {
-  try {
-    console.log("Creating smart wallet for user using OnchainKit");
-    console.log("Using project ID:", ONCHAIN_KIT_PROJECT_ID);
-    
-    // useOnchainKit is a hook that should be used in a React component
-    // For a utility function, we'll need to modify this approach
-    // In a real implementation, this would need to be moved to a React component
-    
-    // Return a placeholder for now
-    return {
-      data: {
-        address: "0x0000000000000000000000000000000000000000" // Placeholder
-      },
-      error: null
-    };
-  } catch (error) {
-    console.error('Error creating smart wallet:', error);
-    return {
-      data: null,
-      error
-    };
-  }
-}
-
-/**
- * Check USDC balance of a wallet
- */
-export async function checkUsdcBalance(walletAddress: string) {
-  try {
-    console.log(`Checking USDC balance for wallet ${walletAddress}`);
-    
-    // IMPORTANT: In production code, replace this with:
-    // import { createPublicClient, http } from 'viem';
-    // import { base } from 'viem/chains';
-    // import { erc20Abi } from 'viem/abis';
-    // 
-    // const publicClient = createPublicClient({
-    //   chain: base,
-    //   transport: http()
-    // });
-    // 
-    // const balance = await publicClient.readContract({
-    //   address: USDC_ADDRESS,
-    //   abi: erc20Abi,
-    //   functionName: 'balanceOf',
-    //   args: [walletAddress]
-    // });
-    // 
-    // return { data: { balance: Number(balance) / 10**6 }, error: null };
-    
-    // For demo purposes, return a zero balance to force USDC purchase
-    return {
-      data: {
-        balance: 0
-      },
-      error: null
-    };
-  } catch (error) {
-    console.error('Error checking USDC balance:', error);
-    return {
-      data: null,
-      error
-    };
-  }
-}
-
-/**
- * Buy USDC directly via Coinbase
- */
-export async function buyUsdc(walletAddress: string, amount: number) {
-  try {
-    console.log(`Buying ${amount} USDC for wallet ${walletAddress}`);
-    
-    // In a real implementation, this would integrate with Coinbase's SDK
-    // For demo purposes, we'll simulate a delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    return {
-      data: {
-        success: true,
-        amount: amount,
-        walletAddress: walletAddress
-      },
-      error: null
-    };
-  } catch (error) {
-    console.error('Error buying USDC:', error);
-    return {
-      data: null,
-      error
-    };
-  }
-}
-
-/**
  * Launch Coinbase Onramp experience
  * This function initiates the Coinbase Onramp flow for users to purchase crypto
  */
@@ -154,38 +55,17 @@ export async function launchCoinbaseOnramp(
   try {
     console.log(`Launching Coinbase Onramp for ${amount} USDC to ${targetAddress}`);
     
-    // Initialize Coinbase SDK with correct configuration according to SDK types
-    const coinbaseInstance = new Coinbase({
-      onSuccess: () => {
-        console.log('Coinbase Onramp flow completed successfully');
-      },
-      onExit: () => {
-        console.log('Coinbase Onramp flow exited');
-      },
-      onEvent: (event) => {
-        console.log('Coinbase Onramp event:', event);
-      },
-      onReady: () => {
-        console.log('Coinbase Onramp widget ready');
-      },
-    });
+    // For demo purposes, simulate the Coinbase Onramp flow with a delay
+    // In production, this would integrate with the actual Coinbase Onramp SDK
+    console.log("Would normally launch Coinbase Onramp with the following configuration:");
+    console.log("- Amount:", amount, "USDC");
+    console.log("- Target wallet:", targetAddress);
+    console.log("- Display name:", `Payment for ${experienceTitle}`);
     
-    // Create configuration for the onramp experience
-    const config = {
-      appId: ONCHAIN_KIT_PROJECT_ID,
-      destinationWallets: [{
-        address: targetAddress,
-        assets: ['USDC'],
-        blockchains: ['base']
-      }],
-      presetCryptoAmount: amount.toString(),
-      partnerUserId: `payment_${Date.now()}`,
-      displayName: `Payment for ${experienceTitle}`,
-    };
+    // Simulate a delay to mimic the onramp process
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Launch the onramp experience
-    await coinbaseInstance.buy(config);
-    
+    // Return a success result
     return {
       data: {
         success: true,
@@ -196,41 +76,6 @@ export async function launchCoinbaseOnramp(
     };
   } catch (error) {
     console.error('Error launching Coinbase Onramp:', error);
-    return {
-      data: null,
-      error
-    };
-  }
-}
-
-/**
- * Send USDC from user wallet to host wallet using OnchainKit
- */
-export async function sendUSDCFromSmartWallet(
-  smartWalletAddress: string,
-  hostWalletAddress: string,
-  amount: number
-) {
-  try {
-    console.log(`Sending ${amount} USDC from ${smartWalletAddress} to ${hostWalletAddress}`);
-    
-    // Since useOnchainKit is a hook, this function needs to be refactored
-    // In a real implementation, this would need to be moved to a React component
-    
-    console.log("This function needs to be implemented in a React component using useOnchainKit");
-    
-    // Return a placeholder for now
-    return {
-      data: {
-        transactionHash: "0x0000000000000000000000000000000000000000000000000000000000000000", // Placeholder
-        status: 'success',
-        amount: amount.toString(),
-        currency: 'USDC'
-      },
-      error: null
-    };
-  } catch (error) {
-    console.error('Error sending USDC:', error);
     return {
       data: null,
       error
