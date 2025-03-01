@@ -62,15 +62,19 @@ export async function launchCoinbaseOneClickBuy(
       localStorage.setItem('cb_ramp_user_id', partnerUserId);
     }
     
-    // Generate the one-click buy URL using the correct parameter structure
-    // According to the latest API documentation, use the correct properties
+    // Generate the one-click buy URL using the correct parameters
+    // According to the API docs, we need to use the correct property names
     const buyUrl = await getOnrampBuyUrl({
       partnerUserId: partnerUserId,
       presetCryptoAmount: amount,
-      // Remove problematic properties and use only valid ones
-      blockchain: 'base',
-      asset: 'USDC',
-      address: targetAddress
+      // Using only properties known to be valid according to type definition
+      destinationWallets: [
+        {
+          address: targetAddress,
+          assets: ['USDC'],
+          blockchains: ['base']
+        }
+      ]
     });
     
     console.log("Generated Coinbase OneClickBuy URL:", buyUrl);
