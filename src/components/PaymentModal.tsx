@@ -14,10 +14,15 @@ import { Button } from './ui/button';
 import { format } from 'date-fns';
 import { supabase } from '../integrations/supabase/client';
 import { useToast } from '../hooks/use-toast';
-import { Calendar, Clock, Users, Wallet, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Users, Wallet, Loader2, CreditCard } from 'lucide-react';
 import { BookingDetails } from '../utils/types';
 import { FundCard } from '@coinbase/onchainkit/fund';
-import { createSmartWallet, sendUSDCFromSmartWallet, updatePaymentStatus } from '../utils/coinbase';
+import { 
+  createSmartWallet, 
+  sendUSDCFromSmartWallet, 
+  updatePaymentStatus,
+  checkUsdcBalance 
+} from '../utils/coinbase';
 
 interface PaymentModalProps {
   open: boolean;
@@ -47,8 +52,10 @@ export default function PaymentModal({
   const [bookingCreated, setBookingCreated] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [paymentStep, setPaymentStep] = useState<'initial' | 'smart-wallet' | 'funding'>('initial');
+  const [paymentStep, setPaymentStep] = useState<'initial' | 'smart-wallet' | 'funding' | 'buy-usdc' | 'confirm-payment'>('initial');
   const [smartWalletAddress, setSmartWalletAddress] = useState<string | null>(null);
+  const [usdcBalance, setUsdcBalance] = useState<number>(0);
+  const [isCheckingBalance, setIsCheckingBalance] = useState(false);
 
   // Debug log for host wallet address
   useEffect(() => {
@@ -165,10 +172,12 @@ export default function PaymentModal({
       
       toast({
         title: "Smart wallet created",
-        description: "Now you can fund your wallet to complete the payment",
+        description: "Now checking your wallet balance",
       });
       
-      setPaymentStep('funding');
+      // Check if the wallet has enough USDC already
+      await checkWalletBalance(walletData.address);
+
     } catch (error) {
       console.error("Error creating smart wallet:", error);
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
@@ -178,18 +187,92 @@ export default function PaymentModal({
         description: errorMessage,
         variant: "destructive",
       });
+      setPaymentStep('initial');
     } finally {
       setIsProcessingPayment(false);
     }
   };
 
+  const checkWalletBalance = async (walletAddress: string) => {
+    try {
+      setIsCheckingBalance(true);
+      
+      // Check the wallet's USDC balance
+      const { data: balanceData, error: balanceError } = await checkUsdcBalance(walletAddress);
+      
+      if (balanceError || !balanceData) {
+        throw new Error(balanceError?.message || "Failed to check USDC balance");
+      }
+      
+      setUsdcBalance(balanceData.balance);
+      console.log("Wallet USDC balance:", balanceData.balance);
+      
+      // Determine next step based on balance
+      if (balanceData.balance >= bookingDetails.totalPrice) {
+        // If wallet has enough USDC, go to confirm payment step
+        setPaymentStep('confirm-payment');
+        toast({
+          title: "Wallet funded",
+          description: `Your wallet has ${balanceData.balance} USDC. Ready to complete payment.`,
+        });
+      } else {
+        // If wallet needs more USDC, go to buy USDC step
+        setPaymentStep('buy-usdc');
+        toast({
+          title: "USDC needed",
+          description: `Your wallet needs more USDC to complete this payment.`,
+        });
+      }
+    } catch (error) {
+      console.error("Error checking wallet balance:", error);
+      toast({
+        title: "Balance check failed",
+        description: "Could not verify your USDC balance. Please try again.",
+        variant: "destructive",
+      });
+      // Default to buy USDC step if balance check fails
+      setPaymentStep('buy-usdc');
+    } finally {
+      setIsCheckingBalance(false);
+    }
+  };
+
+  const handleBuyUsdc = () => {
+    // Move to the funding step to buy USDC
+    setPaymentStep('funding');
+  };
+
   const handleFundSuccess = async (data: any) => {
+    console.log("Fund success data:", data);
+    
+    if (!smartWalletAddress) {
+      console.error("No smart wallet address found");
+      return;
+    }
+    
+    try {
+      // After successful funding, check balance again
+      await checkWalletBalance(smartWalletAddress);
+    } catch (error) {
+      console.error("Error after funding:", error);
+      toast({
+        title: "Funding verification failed",
+        description: "Your wallet may have been funded, but we couldn't verify the new balance.",
+        variant: "destructive",
+      });
+      
+      // Move to confirm payment step anyway, user can try to complete payment
+      setPaymentStep('confirm-payment');
+    }
+  };
+
+  const handleCompletePayment = async () => {
     if (!smartWalletAddress || !hostWalletAddress || !bookingId) return;
     
     try {
       setIsProcessingPayment(true);
       
-      console.log("Funding successful, proceeding with payment");
+      console.log("Processing payment from smart wallet to host");
       
       // Send payment from smart wallet to host
       const { data: txData, error: txError } = await sendUSDCFromSmartWallet(
@@ -201,6 +284,8 @@ export default function PaymentModal({
       if (txError || !txData) {
         throw new Error(txError?.message || "Failed to send USDC payment");
       }
+      
+      console.log("Payment successful:", txData);
       
       // Extract transaction hash
       const transactionHash = txData.transactionHash;
@@ -310,6 +395,48 @@ export default function PaymentModal({
           </div>
         );
         
+      case 'buy-usdc':
+        return (
+          <div className="space-y-4 w-full">
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <p className="text-sm font-medium mb-1">Your smart wallet is ready</p>
+              <p className="text-xs text-gray-600 mb-2">
+                Your wallet needs USDC to complete this payment
+              </p>
+              {smartWalletAddress && (
+                <p className="text-xs font-mono bg-white p-2 rounded truncate">
+                  {smartWalletAddress}
+                </p>
+              )}
+              
+              <div className="mt-3 flex justify-between text-sm">
+                <span>Current balance:</span>
+                <span className="font-medium">{usdcBalance} USDC</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Required amount:</span>
+                <span className="font-medium">{bookingDetails.totalPrice} USDC</span>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleBuyUsdc}
+              className="w-full"
+            >
+              <CreditCard className="mr-2 h-4 w-4" />
+              Buy USDC
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setPaymentStep('initial')}
+            >
+              Back
+            </Button>
+          </div>
+        );
+        
       case 'funding':
         return (
           <div className="space-y-4 w-full">
@@ -321,9 +448,9 @@ export default function PaymentModal({
             ) : (
               <>
                 <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                  <p className="text-sm font-medium mb-1">Your smart wallet is ready</p>
+                  <p className="text-sm font-medium mb-1">Buy USDC to complete your payment</p>
                   <p className="text-xs text-gray-600 mb-2">
-                    Fund your wallet with USDC to complete your payment
+                    Your wallet needs {bookingDetails.totalPrice} USDC to complete this payment
                   </p>
                   {smartWalletAddress && (
                     <p className="text-xs font-mono bg-white p-2 rounded truncate">
@@ -340,8 +467,7 @@ export default function PaymentModal({
                   onSuccess={handleFundSuccess}
                   onError={(error) => {
                     console.error("Funding error:", error);
-                    // Fix: Handle OnrampError type correctly
-                    // OnrampError might have error details in a different property
+                    // Handle OnrampError type correctly
                     const errorDescription = 
                       typeof error === 'object' && error !== null ? 
                         (error as any).toString?.() || JSON.stringify(error) : 
@@ -356,7 +482,8 @@ export default function PaymentModal({
                   onStatus={(status) => {
                     console.log("Payment status:", status);
                     if (status && status.statusName === 'exit') {
-                      setPaymentStep('initial');
+                      // Go back to buy USDC step if user exits funding flow
+                      setPaymentStep('buy-usdc');
                     }
                   }}
                 />
@@ -364,9 +491,74 @@ export default function PaymentModal({
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => setPaymentStep('initial')}
+                  onClick={() => setPaymentStep('buy-usdc')}
                 >
                   Back
+                </Button>
+              </>
+            )}
+          </div>
+        );
+        
+      case 'confirm-payment':
+        return (
+          <div className="space-y-4 w-full">
+            {isProcessingPayment ? (
+              <div className="flex flex-col items-center py-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                <p className="text-sm text-center">Processing your payment...</p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                  <p className="text-sm font-medium mb-1">Your smart wallet is ready</p>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Ready to send {bookingDetails.totalPrice} USDC to the host
+                  </p>
+                  {smartWalletAddress && (
+                    <p className="text-xs font-mono bg-white p-2 rounded truncate">
+                      {smartWalletAddress}
+                    </p>
+                  )}
+                  
+                  <div className="mt-3 flex justify-between text-sm">
+                    <span>Available balance:</span>
+                    <span className="font-medium">{usdcBalance} USDC</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Payment amount:</span>
+                    <span className="font-medium">{bookingDetails.totalPrice} USDC</span>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
+                  <p>Payment will be sent directly to the host's wallet:</p>
+                  <p className="font-mono text-xs mt-1 truncate">{hostWalletAddress}</p>
+                </div>
+                
+                <Button 
+                  onClick={handleCompletePayment}
+                  className="w-full"
+                >
+                  Complete Payment
+                </Button>
+                
+                {usdcBalance < bookingDetails.totalPrice && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setPaymentStep('buy-usdc')}
+                  >
+                    Add More USDC
+                  </Button>
+                )}
+                
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setPaymentStep('initial')}
+                >
+                  Cancel
                 </Button>
               </>
             )}
@@ -423,7 +615,7 @@ export default function PaymentModal({
             </div>
           )}
 
-          {bookingCreated && hostWalletAddress && (
+          {bookingCreated && hostWalletAddress && paymentStep === 'initial' && (
             <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
               <p>Payment will be sent directly to the host's wallet:</p>
               <p className="font-mono text-xs mt-1 truncate">{hostWalletAddress}</p>

@@ -126,6 +126,49 @@ export async function fundSmartWallet(walletAddress: string, amount: number) {
 }
 
 /**
+ * Check USDC balance of a wallet
+ * This would use viem in a real implementation
+ */
+export async function checkUsdcBalance(walletAddress: string) {
+  try {
+    console.log(`Checking USDC balance for wallet ${walletAddress}`);
+    
+    // IMPORTANT: In production code, replace this with:
+    // import { createPublicClient, http } from 'viem';
+    // import { base } from 'viem/chains';
+    // import { erc20Abi } from 'viem/abis';
+    // 
+    // const publicClient = createPublicClient({
+    //   chain: base,
+    //   transport: http()
+    // });
+    // 
+    // const balance = await publicClient.readContract({
+    //   address: USDC_ADDRESS,
+    //   abi: erc20Abi,
+    //   functionName: 'balanceOf',
+    //   args: [walletAddress]
+    // });
+    // 
+    // return { data: { balance: Number(balance) / 10**6 }, error: null };
+    
+    // For demo purposes, return a zero balance to force USDC purchase
+    return {
+      data: {
+        balance: 0
+      },
+      error: null
+    };
+  } catch (error) {
+    console.error('Error checking USDC balance:', error);
+    return {
+      data: null,
+      error
+    };
+  }
+}
+
+/**
  * Send USDC from user wallet to host wallet using OnchainKit
  * This function handles the approval and transfer in a single operation
  */
