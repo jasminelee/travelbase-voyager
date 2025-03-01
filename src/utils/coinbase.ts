@@ -1,3 +1,4 @@
+
 // This file contains utility functions related to Coinbase payments
 import { supabase } from '../integrations/supabase/client';
 import { useOnchainKit } from '@coinbase/onchainkit';
@@ -154,26 +155,42 @@ export async function launchCoinbaseOnramp(
   try {
     console.log(`Launching Coinbase Onramp for ${amount} USDC to ${targetAddress}`);
     
-    // Initialize the Coinbase SDK using the correct properties according to the SDK's type definitions
-    const coinbase = new Coinbase({
-      appId: ONCHAIN_KIT_PROJECT_ID,
-      widgetParameters: {
-        destinationWallets: [{
-          address: targetAddress,
-          assets: ['USDC'],
-          blockchains: ['base']
-        }],
-        presetCryptoAmount: amount.toString(),
-        partnerUserId: `payment_${Date.now()}`,
-        displayName: `Payment for ${experienceTitle}`
-      }
+    // Initialize Coinbase SDK according to the official demo application
+    const coinbaseOnramp = new Coinbase({
+      // The configuration object should match the expected CoinbaseOptions type
+      embeddedContentStyles: {
+        target: '#coinbase-onramp-container', // Optional target element
+        width: '100%',
+        height: '600px',
+      },
+      onSuccess: () => {
+        console.log('Coinbase Onramp flow completed successfully');
+      },
+      onExit: () => {
+        console.log('Coinbase Onramp flow exited');
+      },
+      onEvent: (event) => {
+        console.log('Coinbase Onramp event:', event);
+      },
+      onReady: () => {
+        console.log('Coinbase Onramp widget ready');
+      },
     });
     
-    // Use the correct method to show the Coinbase widget according to SDK
-    await coinbase.showOnramp();
+    // Launch the onramp experience using the appropriate method from the SDK
+    // Based on Coinbase demo application
+    await coinbaseOnramp.mount({
+      appId: ONCHAIN_KIT_PROJECT_ID,
+      destinationWallets: [{
+        address: targetAddress,
+        assets: ['USDC'],
+        blockchains: ['base']
+      }],
+      presetCryptoAmount: amount.toString(),
+      partnerUserId: `payment_${Date.now()}`,
+      displayName: `Payment for ${experienceTitle}`,
+    });
     
-    // Return success (note: actual transaction confirmation would require
-    // either webhook integration or user confirmation in a production app)
     return {
       data: {
         success: true,
