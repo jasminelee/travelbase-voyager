@@ -17,10 +17,8 @@ import { useToast } from '../hooks/use-toast';
 import { Calendar, Clock, Users, Wallet, Loader2, CreditCard } from 'lucide-react';
 import { BookingDetails } from '../utils/types';
 import { 
-  createSmartWallet, 
-  sendUSDCFromSmartWallet, 
   updatePaymentStatus,
-  checkUsdcBalance 
+  launchCoinbaseOnramp
 } from '../utils/coinbase';
 
 interface PaymentModalProps {
@@ -51,11 +49,6 @@ export default function PaymentModal({
   const [bookingCreated, setBookingCreated] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [paymentStep, setPaymentStep] = useState<'initial' | 'smart-wallet' | 'confirm-payment'>('initial');
-  const [smartWalletAddress, setSmartWalletAddress] = useState<string | null>(null);
-  const [usdcBalance, setUsdcBalance] = useState<number>(0);
-  const [isCheckingBalance, setIsCheckingBalance] = useState(false);
-  const [isBuyingUsdc, setIsBuyingUsdc] = useState(false);
 
   // Debug log for host wallet address
   useEffect(() => {
@@ -154,152 +147,37 @@ export default function PaymentModal({
     }
   };
 
-  const handleCreateSmartWallet = async () => {
+  const handleStartPayment = async () => {
     if (!hostWalletAddress || !bookingId) return;
     
     try {
       setIsProcessingPayment(true);
       
-      // Create a smart wallet for the user
-      const { data: walletData, error: walletError } = await createSmartWallet();
-      
-      if (walletError || !walletData) {
-        throw new Error(walletError?.toString() || "Failed to create smart wallet");
-      }
-      
-      setSmartWalletAddress(walletData.address);
-      console.log("Created smart wallet with address:", walletData.address);
-      
-      toast({
-        title: "Smart wallet created",
-        description: "Now checking your wallet balance",
-      });
-      
-      // Check if the wallet has enough USDC already
-      await checkWalletBalance(walletData.address);
-
-    } catch (error) {
-      console.error("Error creating smart wallet:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-      
-      toast({
-        title: "Error creating wallet",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      setPaymentStep('initial');
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
-
-  const checkWalletBalance = async (walletAddress: string) => {
-    try {
-      setIsCheckingBalance(true);
-      
-      // Check the wallet's USDC balance
-      const { data: balanceData, error: balanceError } = await checkUsdcBalance(walletAddress);
-      
-      if (balanceError || !balanceData) {
-        throw new Error(balanceError?.toString() || "Failed to check USDC balance");
-      }
-      
-      setUsdcBalance(balanceData.balance);
-      console.log("Wallet USDC balance:", balanceData.balance);
-      
-      // Determine next step based on balance
-      if (balanceData.balance >= bookingDetails.totalPrice) {
-        // If wallet has enough USDC, go to confirm payment step
-        setPaymentStep('confirm-payment');
-        toast({
-          title: "Wallet funded",
-          description: `Your wallet has ${balanceData.balance} USDC. Ready to complete payment.`,
-        });
-      } else {
-        // If wallet needs more USDC, stay on the smart wallet step
-        setPaymentStep('smart-wallet');
-        toast({
-          title: "USDC needed",
-          description: `Your wallet needs more USDC to complete this payment.`,
-        });
-      }
-    } catch (error) {
-      console.error("Error checking wallet balance:", error);
-      toast({
-        title: "Balance check failed",
-        description: "Could not verify your USDC balance. Please try again.",
-        variant: "destructive",
-      });
-      // Default to smart wallet step if balance check fails
-      setPaymentStep('smart-wallet');
-    } finally {
-      setIsCheckingBalance(false);
-    }
-  };
-
-  const handleBuyUsdc = async () => {
-    if (!smartWalletAddress) return;
-    
-    try {
-      setIsBuyingUsdc(true);
-      
-      // Simulate a delay for USDC purchase
-      toast({
-        title: "Processing purchase",
-        description: "Purchasing USDC for your wallet..."
-      });
-      
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 2500));
-      
-      // Update wallet balance after purchase
-      setUsdcBalance(prev => prev + 5); // Add 5 USDC to balance
-      
-      toast({
-        title: "USDC purchased",
-        description: "Successfully added 5 USDC to your wallet."
-      });
-      
-      // Move to confirm payment step
-      setPaymentStep('confirm-payment');
-    } catch (error) {
-      console.error("Error buying USDC:", error);
-      toast({
-        title: "Purchase failed",
-        description: "There was a problem buying USDC. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsBuyingUsdc(false);
-    }
-  };
-
-  const handleCompletePayment = async () => {
-    if (!smartWalletAddress || !hostWalletAddress || !bookingId) return;
-    
-    try {
-      setIsProcessingPayment(true);
-      
-      console.log("Processing payment from smart wallet to host");
-      
-      // Send payment from smart wallet to host
-      const { data: txData, error: txError } = await sendUSDCFromSmartWallet(
-        smartWalletAddress,
+      // Launch Coinbase Onramp 
+      const { data, error } = await launchCoinbaseOnramp(
+        bookingDetails.totalPrice,
         hostWalletAddress,
-        bookingDetails.totalPrice
+        experienceTitle
       );
       
-      if (txError || !txData) {
-        throw new Error(txError?.toString() || "Failed to send USDC payment");
+      if (error) {
+        throw new Error(error.toString());
       }
       
-      console.log("Payment successful:", txData);
+      // This is a simplified approach for demo purposes
+      // In a production app, you'd want to use webhooks or another mechanism
+      // to confirm the actual transaction completion
+      toast({
+        title: "Payment initiated",
+        description: "Please complete your payment through the Coinbase Onramp widget.",
+      });
       
-      // Extract transaction hash
-      const transactionHash = txData.transactionHash;
-      
-      // Update payment status in database
-      await handlePaymentSuccess(transactionHash, smartWalletAddress);
+      // For demo purposes, we'll assume the payment was successful after the widget is closed
+      // In production, you'd verify the transaction through a webhook or other means
+      setTimeout(() => {
+        updatePaymentStatus(bookingId, 'completed');
+        handlePaymentSuccess();
+      }, 3000);
       
     } catch (error) {
       console.error("Error processing payment:", error);
@@ -315,23 +193,11 @@ export default function PaymentModal({
     }
   };
 
-  const handlePaymentSuccess = async (transactionHash: string, walletAddress: string) => {
+  const handlePaymentSuccess = async () => {
     try {
       if (!bookingId) return;
 
       console.log("Processing successful payment for booking:", bookingId);
-      console.log("Transaction hash:", transactionHash);
-      console.log("Wallet address:", walletAddress);
-
-      // Update payment entry in the database
-      const { error: paymentError } = await updatePaymentStatus(
-        bookingId,
-        'completed',
-        transactionHash,
-        walletAddress
-      );
-
-      if (paymentError) throw paymentError;
 
       // Update booking status to confirmed
       const { error: bookingUpdateError } = await supabase
@@ -356,172 +222,6 @@ export default function PaymentModal({
         description: "Your payment was received but we couldn't update your booking status. Please contact support.",
         variant: "destructive",
       });
-    }
-  };
-
-  const handleConnectExistingWallet = () => {
-    // In a real implementation, this would connect to an existing wallet
-    // using wagmi/viem or another wallet connector
-    toast({
-      title: "Wallet connection",
-      description: "This would connect to your existing wallet in a production environment",
-    });
-  };
-
-  const renderPaymentStep = () => {
-    if (!bookingCreated) return null;
-    
-    switch (paymentStep) {
-      case 'initial':
-        return (
-          <div className="space-y-4 w-full">
-            <Button
-              onClick={handleCreateSmartWallet}
-              disabled={isProcessingPayment || !hostWalletAddress}
-              className="w-full"
-            >
-              <Wallet className="mr-2 h-4 w-4" />
-              Pay with Smart Wallet
-            </Button>
-            
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">Or</span>
-              </div>
-            </div>
-            
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleConnectExistingWallet}
-            >
-              Connect Existing Wallet
-            </Button>
-          </div>
-        );
-        
-      case 'smart-wallet':
-        return (
-          <div className="space-y-4 w-full">
-            {isBuyingUsdc ? (
-              <div className="flex flex-col items-center py-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                <p className="text-sm text-center">Purchasing USDC...</p>
-              </div>
-            ) : (
-              <>
-                <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                  <p className="text-sm font-medium mb-1">Your smart wallet is ready</p>
-                  <p className="text-xs text-gray-600 mb-2">
-                    Your wallet needs USDC to complete this payment
-                  </p>
-                  {smartWalletAddress && (
-                    <p className="text-xs font-mono bg-white p-2 rounded truncate">
-                      {smartWalletAddress}
-                    </p>
-                  )}
-                  
-                  <div className="mt-3 flex justify-between text-sm">
-                    <span>Current balance:</span>
-                    <span className="font-medium">{usdcBalance} USDC</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Required amount:</span>
-                    <span className="font-medium">{bookingDetails.totalPrice} USDC</span>
-                  </div>
-                </div>
-                
-                <Button 
-                  onClick={handleBuyUsdc}
-                  className="w-full"
-                  disabled={isBuyingUsdc}
-                >
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Buy USDC
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setPaymentStep('initial')}
-                >
-                  Back
-                </Button>
-              </>
-            )}
-          </div>
-        );
-        
-      case 'confirm-payment':
-        return (
-          <div className="space-y-4 w-full">
-            {isProcessingPayment ? (
-              <div className="flex flex-col items-center py-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                <p className="text-sm text-center">Processing your payment...</p>
-              </div>
-            ) : (
-              <>
-                <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                  <p className="text-sm font-medium mb-1">Your smart wallet is ready</p>
-                  <p className="text-xs text-gray-600 mb-2">
-                    Ready to send {bookingDetails.totalPrice} USDC to the host
-                  </p>
-                  {smartWalletAddress && (
-                    <p className="text-xs font-mono bg-white p-2 rounded truncate">
-                      {smartWalletAddress}
-                    </p>
-                  )}
-                  
-                  <div className="mt-3 flex justify-between text-sm">
-                    <span>Available balance:</span>
-                    <span className="font-medium">{usdcBalance} USDC</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Payment amount:</span>
-                    <span className="font-medium">{bookingDetails.totalPrice} USDC</span>
-                  </div>
-                </div>
-                
-                <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
-                  <p>Payment will be sent directly to the host's wallet:</p>
-                  <p className="font-mono text-xs mt-1 truncate">{hostWalletAddress}</p>
-                </div>
-                
-                <Button 
-                  onClick={handleCompletePayment}
-                  className="w-full"
-                >
-                  Complete Payment
-                </Button>
-                
-                {usdcBalance < bookingDetails.totalPrice && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={handleBuyUsdc}
-                  >
-                    Add More USDC
-                  </Button>
-                )}
-                
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setPaymentStep('initial')}
-                >
-                  Cancel
-                </Button>
-              </>
-            )}
-          </div>
-        );
-        
-      default:
-        return null;
     }
   };
 
@@ -570,7 +270,7 @@ export default function PaymentModal({
             </div>
           )}
 
-          {bookingCreated && hostWalletAddress && paymentStep === 'initial' && (
+          {bookingCreated && hostWalletAddress && (
             <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
               <p>Payment will be sent directly to the host's wallet:</p>
               <p className="font-mono text-xs mt-1 truncate">{hostWalletAddress}</p>
@@ -588,7 +288,21 @@ export default function PaymentModal({
               {isCreatingBooking ? 'Creating booking...' : 'Continue to Payment'}
             </Button>
           ) : (
-            renderPaymentStep()
+            isProcessingPayment ? (
+              <div className="flex flex-col items-center py-4 w-full">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                <p className="text-sm text-center">Processing your payment...</p>
+              </div>
+            ) : (
+              <Button 
+                onClick={handleStartPayment}
+                className="w-full"
+                disabled={!hostWalletAddress}
+              >
+                <CreditCard className="mr-2 h-4 w-4" />
+                Pay with Coinbase
+              </Button>
+            )
           )}
         </DialogFooter>
       </DialogContent>
