@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <div>
             <Link to="/" className="inline-flex items-center space-x-2 mb-4">
-              <span className="bg-primary text-white p-1 rounded-md">DTEP</span>
+              <span className="bg-primary text-white p-1 rounded-md">TravelBase</span>
               <span className="text-white text-xl font-medium">Voyager</span>
             </Link>
             <p className="text-gray-400 mb-6">
@@ -73,7 +73,7 @@ const Footer = () => {
 
         <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-500 text-sm mb-4 md:mb-0">
-            &copy; {new Date().getFullYear()} DTEP Voyager. All rights reserved.
+            &copy; {new Date().getFullYear()} TravelBase Voyager. All rights reserved.
           </p>
           <div className="flex items-center space-x-4">
             <span className="flex items-center text-gray-400 text-sm">
@@ -81,13 +81,13 @@ const Footer = () => {
                 <path d="M13 7H7v6h6V7z" />
                 <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1v-2H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
               </svg>
-              Built for Crypto Hackathon 2023
+              Built for EthDenver Buidlathon 2025
             </span>
             <span className="flex items-center text-gray-400 text-sm">
               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                 <path fillRule="evenodd" d="M6.672 1.911a1 1 0 10-1.932.518l.259.966a1 1 0 001.932-.518l-.26-.966zM2.429 4.74a1 1 0 10-.517 1.932l.966.259a1 1 0 00.517-1.932l-.966-.26zm8.814-.569a1 1 0 00-1.415-1.414l-.707.707a1 1 0 101.415 1.415l.707-.708zm-7.071 7.072l.707-.707A1 1 0 003.465 9.12l-.708.707a1 1 0 001.415 1.415zm3.2-5.171a1 1 0 00-1.3 1.3l4 10a1 1 0 001.823.075l1.38-2.759 3.018 3.02a1 1 0 001.414-1.415l-3.019-3.02 2.76-1.379a1 1 0 00-.076-1.822l-10-4z" clipRule="evenodd" />
               </svg>
-              Powered by Coinbase Onramp
+              Powered by Coinbase Developer Platform
             </span>
           </div>
         </div>

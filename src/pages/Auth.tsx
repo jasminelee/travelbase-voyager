@@ -134,7 +134,7 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-            DTEP <span className="text-primary">Voyager</span>
+            TravelBase <span className="text-primary">Voyager</span>
           </h1>
           <p className="mt-2 text-base text-gray-600">
             Explore unique travel experiences with crypto payments
@@ -228,7 +228,7 @@ const Auth = () => {
                   <CardHeader>
                     <CardTitle>Create Your Account</CardTitle>
                     <CardDescription>
-                      Join DTEP Voyager to discover unique travel experiences
+                      Join TravelBase Voyager to discover unique travel experiences
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">

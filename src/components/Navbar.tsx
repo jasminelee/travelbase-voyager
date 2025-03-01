@@ -59,7 +59,7 @@ const Navbar = () => {
           to="/" 
           className="font-medium text-xl flex items-center space-x-2"
         >
-          <span className="bg-primary text-white p-1 rounded-md">DTEP</span>
+          <span className="bg-primary text-white p-1 rounded-md">TravelBase</span>
           <span className={isScrolled ? 'text-gray-800' : 'text-white'}>Voyager</span>
         </Link>
 

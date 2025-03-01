@@ -220,7 +220,7 @@ const Host = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <Building className="mr-2 h-6 w-6 text-primary" />
-                      Why Host on DTEP Voyager?
+                      Why Host on TravelBase Voyager?
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
