@@ -1,4 +1,3 @@
-
 // This file contains utility functions related to Coinbase payments
 import { supabase } from '../integrations/supabase/client';
 import { CoinbaseTransaction } from './types';
@@ -63,18 +62,12 @@ export async function launchCoinbaseOneClickBuy(
     }
     
     // Generate the one-click buy URL using the correct parameter structure according to onchainkit docs
-    // The correct parameters are: partnerUserId, presetCryptoAmount, defaultNetwork, defaultAsset, destinationWallets
     const buyUrl = await getOnrampBuyUrl({
       partnerUserId: partnerUserId,
       presetCryptoAmount: amount,
       defaultNetwork: 'base',
       defaultAsset: 'USDC',
-      // Use destinationWallets array instead of walletAddress
-      destinationWallets: [{
-        address: targetAddress,
-        assets: ['USDC'],
-        blockchains: ['base']
-      }]
+      destinationAddress: targetAddress
     });
     
     console.log("Generated Coinbase OneClickBuy URL:", buyUrl);
