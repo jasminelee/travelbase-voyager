@@ -66,9 +66,12 @@ export async function launchCoinbaseOneClickBuy(
     // According to https://docs.cdp.coinbase.com/onramp/docs/api-oneclickbuy
     const buyUrl = await getOnrampBuyUrl({
       projectId: projectId,
-      // TypeScript is expecting very specific parameters, so we need to match the expected type
       presetCryptoAmount: amount,
-      assets: ['USDC']
+      assets: ['USDC'],
+      // Add the addresses parameter as required by the API
+      addresses: {
+        USDC: targetAddress
+      }
     });
     
     console.log("Generated Coinbase OneClickBuy URL:", buyUrl);
