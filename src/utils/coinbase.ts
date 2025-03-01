@@ -66,15 +66,17 @@ export async function launchCoinbaseOnramp(
     document.body.appendChild(container);
     
     try {
-      // Import the onchainkit module dynamically
-      const { OnRampKit } = await import('@coinbase/onchainkit');
+      // Import the onchainkit module dynamically and correctly access its exports
+      const onchainkit = await import('@coinbase/onchainkit');
+      console.log("Available exports from onchainkit:", Object.keys(onchainkit));
       
-      if (!OnRampKit) {
-        throw new Error("OnRampKit not found in @coinbase/onchainkit");
+      // Check if the module contains OnRamp class
+      if (!onchainkit.OnRamp) {
+        throw new Error("OnRamp not found in @coinbase/onchainkit");
       }
       
-      // Create a new instance of the OnRampKit
-      const onRampKit = new OnRampKit({
+      // Create a new instance of the OnRamp class
+      const onRampKit = new onchainkit.OnRamp({
         appId: 'a1792415-47ed-42f9-861b-52c86d6f7a39', // Your Coinbase project ID
         element: '#coinbase-onramp-container',
         onSuccess: (data: any) => {
