@@ -154,10 +154,15 @@ export async function launchCoinbaseOnramp(
   try {
     console.log(`Launching Coinbase Onramp for ${amount} USDC to ${targetAddress}`);
     
-    // Initialize the Coinbase SDK - updated to use the correct import
+    // Initialize the Coinbase SDK with the correct parameters based on the SDK documentation
     const coinbaseSDK = new Coinbase({
-      appId: ONCHAIN_KIT_PROJECT_ID, // Using the same project ID
-      widgetParameters: {
+      // The SDK expects different parameters than what we were using
+      // Based on Coinbase documentation
+      appType: 'web',
+      authentication: {
+        projectId: ONCHAIN_KIT_PROJECT_ID
+      },
+      onramp: {
         amount: amount.toString(),
         destinationWallets: [{
           address: targetAddress,
@@ -165,15 +170,14 @@ export async function launchCoinbaseOnramp(
           blockchains: ['base']
         }],
         defaultNetwork: 'base',
-        topUpAmount: amount.toString(),
         presetCryptoAmount: amount.toString(),
         partnerUserId: `payment_${Date.now()}`,
         displayName: `Payment for ${experienceTitle}`
       }
     });
     
-    // Open the Coinbase Onramp widget
-    await coinbaseSDK.showOnramp();
+    // Open the Coinbase Onramp flow - using the correct method from the SDK
+    await coinbaseSDK.showOnrampFlow();
     
     // Return success (note: actual transaction confirmation would require
     // either webhook integration or user confirmation in a production app)
