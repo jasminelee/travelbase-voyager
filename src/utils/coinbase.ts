@@ -1,4 +1,3 @@
-
 // This file contains utility functions related to Coinbase payments
 import { supabase } from '../integrations/supabase/client';
 import { useOnchainKit } from '@coinbase/onchainkit';
@@ -155,14 +154,8 @@ export async function launchCoinbaseOnramp(
   try {
     console.log(`Launching Coinbase Onramp for ${amount} USDC to ${targetAddress}`);
     
-    // Initialize Coinbase SDK according to the official demo application
-    const coinbaseOnramp = new Coinbase({
-      // The configuration object should match the expected CoinbaseOptions type
-      embeddedContentStyles: {
-        target: '#coinbase-onramp-container', // Optional target element
-        width: '100%',
-        height: '600px',
-      },
+    // Initialize Coinbase SDK with correct configuration according to SDK types
+    const coinbaseInstance = new Coinbase({
       onSuccess: () => {
         console.log('Coinbase Onramp flow completed successfully');
       },
@@ -177,9 +170,8 @@ export async function launchCoinbaseOnramp(
       },
     });
     
-    // Launch the onramp experience using the appropriate method from the SDK
-    // Based on Coinbase demo application
-    await coinbaseOnramp.mount({
+    // Create configuration for the onramp experience
+    const config = {
       appId: ONCHAIN_KIT_PROJECT_ID,
       destinationWallets: [{
         address: targetAddress,
@@ -189,7 +181,10 @@ export async function launchCoinbaseOnramp(
       presetCryptoAmount: amount.toString(),
       partnerUserId: `payment_${Date.now()}`,
       displayName: `Payment for ${experienceTitle}`,
-    });
+    };
+    
+    // Launch the onramp experience
+    await coinbaseInstance.buy(config);
     
     return {
       data: {
