@@ -86,46 +86,6 @@ export async function createSmartWallet() {
 }
 
 /**
- * Fund a smart wallet using the Coinbase Pay widget
- * Note: In a real implementation, this would use OnchainKit's funding widget
- */
-export async function fundSmartWallet(walletAddress: string, amount: number) {
-  try {
-    console.log(`Funding smart wallet ${walletAddress} with ${amount} USDC`);
-    
-    // IMPORTANT: In production code, replace this with:
-    // import { OnchainKit } from "@coinbase/onchainkit";
-    // const onchainKit = new OnchainKit({ 
-    //   projectId: ONCHAIN_KIT_PROJECT_ID,
-    //   network: "base-mainnet" 
-    // });
-    // return await onchainKit.fundWallet({
-    //   destinationAddress: walletAddress,
-    //   destinationChain: "base-mainnet",
-    //   tokenAmount: amount.toString(),
-    //   tokenSymbol: "USDC"
-    // });
-    
-    // For demo purposes, we'll simulate a successful funding
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    return {
-      data: {
-        status: "success",
-        funded: true
-      },
-      error: null
-    };
-  } catch (error) {
-    console.error('Error funding smart wallet:', error);
-    return {
-      data: null,
-      error
-    };
-  }
-}
-
-/**
  * Check USDC balance of a wallet
  * This would use viem in a real implementation
  */
@@ -161,6 +121,35 @@ export async function checkUsdcBalance(walletAddress: string) {
     };
   } catch (error) {
     console.error('Error checking USDC balance:', error);
+    return {
+      data: null,
+      error
+    };
+  }
+}
+
+/**
+ * Buy USDC directly via Coinbase
+ * This function would integrate with Coinbase's API in a real implementation
+ */
+export async function buyUsdc(walletAddress: string, amount: number) {
+  try {
+    console.log(`Buying ${amount} USDC for wallet ${walletAddress}`);
+    
+    // In a real implementation, this would integrate with Coinbase's SDK
+    // For demo purposes, we'll simulate a delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    return {
+      data: {
+        success: true,
+        amount: amount,
+        walletAddress: walletAddress
+      },
+      error: null
+    };
+  } catch (error) {
+    console.error('Error buying USDC:', error);
     return {
       data: null,
       error

@@ -51,11 +51,11 @@ export default function PaymentModal({
   const [bookingCreated, setBookingCreated] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [paymentStep, setPaymentStep] = useState<'initial' | 'smart-wallet' | 'funding' | 'buy-usdc' | 'confirm-payment'>('initial');
+  const [paymentStep, setPaymentStep] = useState<'initial' | 'smart-wallet' | 'confirm-payment'>('initial');
   const [smartWalletAddress, setSmartWalletAddress] = useState<string | null>(null);
   const [usdcBalance, setUsdcBalance] = useState<number>(0);
   const [isCheckingBalance, setIsCheckingBalance] = useState(false);
-  const [showCoinbaseOptions, setShowCoinbaseOptions] = useState(false);
+  const [isBuyingUsdc, setIsBuyingUsdc] = useState(false);
 
   // Debug log for host wallet address
   useEffect(() => {
@@ -216,8 +216,8 @@ export default function PaymentModal({
           description: `Your wallet has ${balanceData.balance} USDC. Ready to complete payment.`,
         });
       } else {
-        // If wallet needs more USDC, go to buy USDC step
-        setPaymentStep('buy-usdc');
+        // If wallet needs more USDC, stay on the smart wallet step
+        setPaymentStep('smart-wallet');
         toast({
           title: "USDC needed",
           description: `Your wallet needs more USDC to complete this payment.`,
@@ -230,23 +230,18 @@ export default function PaymentModal({
         description: "Could not verify your USDC balance. Please try again.",
         variant: "destructive",
       });
-      // Default to buy USDC step if balance check fails
-      setPaymentStep('buy-usdc');
+      // Default to smart wallet step if balance check fails
+      setPaymentStep('smart-wallet');
     } finally {
       setIsCheckingBalance(false);
     }
   };
 
-  const handleBuyUsdc = () => {
-    // Move to the funding step to buy USDC
-    setPaymentStep('funding');
-  };
-
-  const simulateBuyUsdc = async () => {
+  const handleBuyUsdc = async () => {
     if (!smartWalletAddress) return;
     
     try {
-      setIsProcessingPayment(true);
+      setIsBuyingUsdc(true);
       
       // Simulate a delay for USDC purchase
       toast({
@@ -265,10 +260,8 @@ export default function PaymentModal({
         description: "Successfully added 5 USDC to your wallet."
       });
       
-      // If we now have enough USDC, move to confirm payment step
-      if (usdcBalance + 5 >= bookingDetails.totalPrice) {
-        setPaymentStep('confirm-payment');
-      }
+      // Move to confirm payment step
+      setPaymentStep('confirm-payment');
     } catch (error) {
       console.error("Error buying USDC:", error);
       toast({
@@ -277,32 +270,7 @@ export default function PaymentModal({
         variant: "destructive",
       });
     } finally {
-      setIsProcessingPayment(false);
-      setShowCoinbaseOptions(false);
-    }
-  };
-
-  const handleFundSuccess = async (data: any) => {
-    console.log("Fund success data:", data);
-    
-    if (!smartWalletAddress) {
-      console.error("No smart wallet address found");
-      return;
-    }
-    
-    try {
-      // After successful funding, check balance again
-      await checkWalletBalance(smartWalletAddress);
-    } catch (error) {
-      console.error("Error after funding:", error);
-      toast({
-        title: "Funding verification failed",
-        description: "Your wallet may have been funded, but we couldn't verify the new balance.",
-        variant: "destructive",
-      });
-      
-      // Move to confirm payment step anyway, user can try to complete payment
-      setPaymentStep('confirm-payment');
+      setIsBuyingUsdc(false);
     }
   };
 
@@ -435,131 +403,50 @@ export default function PaymentModal({
           </div>
         );
         
-      case 'buy-usdc':
+      case 'smart-wallet':
         return (
           <div className="space-y-4 w-full">
-            <div className="bg-blue-50 p-4 rounded-lg mb-4">
-              <p className="text-sm font-medium mb-1">Your smart wallet is ready</p>
-              <p className="text-xs text-gray-600 mb-2">
-                Your wallet needs USDC to complete this payment
-              </p>
-              {smartWalletAddress && (
-                <p className="text-xs font-mono bg-white p-2 rounded truncate">
-                  {smartWalletAddress}
-                </p>
-              )}
-              
-              <div className="mt-3 flex justify-between text-sm">
-                <span>Current balance:</span>
-                <span className="font-medium">{usdcBalance} USDC</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Required amount:</span>
-                <span className="font-medium">{bookingDetails.totalPrice} USDC</span>
-              </div>
-            </div>
-            
-            <Button 
-              onClick={handleBuyUsdc}
-              className="w-full"
-            >
-              <CreditCard className="mr-2 h-4 w-4" />
-              Buy USDC
-            </Button>
-            
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setPaymentStep('initial')}
-            >
-              Back
-            </Button>
-          </div>
-        );
-        
-      case 'funding':
-        return (
-          <div className="space-y-4 w-full">
-            {isProcessingPayment ? (
+            {isBuyingUsdc ? (
               <div className="flex flex-col items-center py-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                <p className="text-sm text-center">Processing your payment...</p>
+                <p className="text-sm text-center">Purchasing USDC...</p>
               </div>
             ) : (
               <>
                 <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                  <p className="text-sm font-medium mb-1">Buy USDC to complete your payment</p>
+                  <p className="text-sm font-medium mb-1">Your smart wallet is ready</p>
                   <p className="text-xs text-gray-600 mb-2">
-                    Your wallet needs {bookingDetails.totalPrice} USDC to complete this payment
+                    Your wallet needs USDC to complete this payment
                   </p>
                   {smartWalletAddress && (
                     <p className="text-xs font-mono bg-white p-2 rounded truncate">
                       {smartWalletAddress}
                     </p>
                   )}
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <p className="text-xl font-bold">5</p>
-                        <p className="text-sm text-gray-600">USD</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">5 USDC</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <Button 
-                        onClick={() => setShowCoinbaseOptions(!showCoinbaseOptions)}
-                        variant="outline" 
-                        className="flex justify-between items-center w-full"
-                      >
-                        <span className="flex items-center">
-                          <img 
-                            src="https://assets.coinbase.com/assets/favicon.ico" 
-                            alt="Coinbase Logo" 
-                            className="w-5 h-5 mr-2" 
-                          />
-                          Coinbase
-                        </span>
-                        <span className="text-sm text-gray-500">Select</span>
-                      </Button>
-                      
-                      {showCoinbaseOptions && (
-                        <div className="space-y-2 border-t pt-2 mt-2">
-                          <Button 
-                            onClick={simulateBuyUsdc}
-                            variant="ghost" 
-                            className="flex justify-between items-center w-full text-left pl-6"
-                          >
-                            <div>
-                              <p className="font-medium text-sm">Buy USDC</p>
-                              <p className="text-xs text-gray-500">ACH, debit, cash, crypto balance</p>
-                            </div>
-                          </Button>
-                          
-                          <Button 
-                            variant="ghost" 
-                            className="flex justify-between items-center w-full text-left pl-6"
-                          >
-                            <div>
-                              <p className="font-medium text-sm">Debit card</p>
-                              <p className="text-xs text-gray-500">Up to $500/week. No sign up required.</p>
-                            </div>
-                          </Button>
-                        </div>
-                      )}
-                    </div>
+                  
+                  <div className="mt-3 flex justify-between text-sm">
+                    <span>Current balance:</span>
+                    <span className="font-medium">{usdcBalance} USDC</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Required amount:</span>
+                    <span className="font-medium">{bookingDetails.totalPrice} USDC</span>
                   </div>
                 </div>
+                
+                <Button 
+                  onClick={handleBuyUsdc}
+                  className="w-full"
+                  disabled={isBuyingUsdc}
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Buy USDC
+                </Button>
                 
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => setPaymentStep('buy-usdc')}
+                  onClick={() => setPaymentStep('initial')}
                 >
                   Back
                 </Button>
@@ -615,7 +502,7 @@ export default function PaymentModal({
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => setPaymentStep('buy-usdc')}
+                    onClick={handleBuyUsdc}
                   >
                     Add More USDC
                   </Button>
