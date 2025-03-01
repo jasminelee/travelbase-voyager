@@ -16,7 +16,6 @@ import { supabase } from '../integrations/supabase/client';
 import { useToast } from '../hooks/use-toast';
 import { Calendar, Clock, Users, Wallet, Loader2, CreditCard } from 'lucide-react';
 import { BookingDetails } from '../utils/types';
-import { FundCard } from '@coinbase/onchainkit/fund';
 import { 
   createSmartWallet, 
   sendUSDCFromSmartWallet, 
@@ -56,6 +55,7 @@ export default function PaymentModal({
   const [smartWalletAddress, setSmartWalletAddress] = useState<string | null>(null);
   const [usdcBalance, setUsdcBalance] = useState<number>(0);
   const [isCheckingBalance, setIsCheckingBalance] = useState(false);
+  const [showCoinbaseOptions, setShowCoinbaseOptions] = useState(false);
 
   // Debug log for host wallet address
   useEffect(() => {
@@ -164,7 +164,7 @@ export default function PaymentModal({
       const { data: walletData, error: walletError } = await createSmartWallet();
       
       if (walletError || !walletData) {
-        throw new Error(walletError?.message || "Failed to create smart wallet");
+        throw new Error(walletError?.toString() || "Failed to create smart wallet");
       }
       
       setSmartWalletAddress(walletData.address);
@@ -201,7 +201,7 @@ export default function PaymentModal({
       const { data: balanceData, error: balanceError } = await checkUsdcBalance(walletAddress);
       
       if (balanceError || !balanceData) {
-        throw new Error(balanceError?.message || "Failed to check USDC balance");
+        throw new Error(balanceError?.toString() || "Failed to check USDC balance");
       }
       
       setUsdcBalance(balanceData.balance);
@@ -240,6 +240,46 @@ export default function PaymentModal({
   const handleBuyUsdc = () => {
     // Move to the funding step to buy USDC
     setPaymentStep('funding');
+  };
+
+  const simulateBuyUsdc = async () => {
+    if (!smartWalletAddress) return;
+    
+    try {
+      setIsProcessingPayment(true);
+      
+      // Simulate a delay for USDC purchase
+      toast({
+        title: "Processing purchase",
+        description: "Purchasing USDC for your wallet..."
+      });
+      
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      
+      // Update wallet balance after purchase
+      setUsdcBalance(prev => prev + 5); // Add 5 USDC to balance
+      
+      toast({
+        title: "USDC purchased",
+        description: "Successfully added 5 USDC to your wallet."
+      });
+      
+      // If we now have enough USDC, move to confirm payment step
+      if (usdcBalance + 5 >= bookingDetails.totalPrice) {
+        setPaymentStep('confirm-payment');
+      }
+    } catch (error) {
+      console.error("Error buying USDC:", error);
+      toast({
+        title: "Purchase failed",
+        description: "There was a problem buying USDC. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingPayment(false);
+      setShowCoinbaseOptions(false);
+    }
   };
 
   const handleFundSuccess = async (data: any) => {
@@ -282,7 +322,7 @@ export default function PaymentModal({
       );
       
       if (txError || !txData) {
-        throw new Error(txError?.message || "Failed to send USDC payment");
+        throw new Error(txError?.toString() || "Failed to send USDC payment");
       }
       
       console.log("Payment successful:", txData);
@@ -459,34 +499,62 @@ export default function PaymentModal({
                   )}
                 </div>
                 
-                <FundCard
-                  assetSymbol="USDC"
-                  country="US"
-                  headerText={`Buy USDC to complete your payment`}
-                  buttonText={`Buy USDC`}
-                  onSuccess={handleFundSuccess}
-                  onError={(error) => {
-                    console.error("Funding error:", error);
-                    // Handle OnrampError type correctly
-                    const errorDescription = 
-                      typeof error === 'object' && error !== null ? 
-                        (error as any).toString?.() || JSON.stringify(error) : 
-                        'There was a problem funding your wallet';
-                        
-                    toast({
-                      title: "Funding error",
-                      description: errorDescription,
-                      variant: "destructive",
-                    });
-                  }}
-                  onStatus={(status) => {
-                    console.log("Payment status:", status);
-                    if (status && status.statusName === 'exit') {
-                      // Go back to buy USDC step if user exits funding flow
-                      setPaymentStep('buy-usdc');
-                    }
-                  }}
-                />
+                <div className="space-y-4">
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <p className="text-xl font-bold">5</p>
+                        <p className="text-sm text-gray-600">USD</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">5 USDC</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Button 
+                        onClick={() => setShowCoinbaseOptions(!showCoinbaseOptions)}
+                        variant="outline" 
+                        className="flex justify-between items-center w-full"
+                      >
+                        <span className="flex items-center">
+                          <img 
+                            src="https://assets.coinbase.com/assets/favicon.ico" 
+                            alt="Coinbase Logo" 
+                            className="w-5 h-5 mr-2" 
+                          />
+                          Coinbase
+                        </span>
+                        <span className="text-sm text-gray-500">Select</span>
+                      </Button>
+                      
+                      {showCoinbaseOptions && (
+                        <div className="space-y-2 border-t pt-2 mt-2">
+                          <Button 
+                            onClick={simulateBuyUsdc}
+                            variant="ghost" 
+                            className="flex justify-between items-center w-full text-left pl-6"
+                          >
+                            <div>
+                              <p className="font-medium text-sm">Buy USDC</p>
+                              <p className="text-xs text-gray-500">ACH, debit, cash, crypto balance</p>
+                            </div>
+                          </Button>
+                          
+                          <Button 
+                            variant="ghost" 
+                            className="flex justify-between items-center w-full text-left pl-6"
+                          >
+                            <div>
+                              <p className="font-medium text-sm">Debit card</p>
+                              <p className="text-xs text-gray-500">Up to $500/week. No sign up required.</p>
+                            </div>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
                 
                 <Button
                   variant="outline"
