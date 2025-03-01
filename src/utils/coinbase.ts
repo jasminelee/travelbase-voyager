@@ -58,18 +58,13 @@ export async function launchCoinbaseOneClickBuy(
   try {
     console.log(`Launching Coinbase OneClickBuy for ${amount} USDC`);
     
-    // Generate UUID for partner user ID if not already in localStorage
-    let partnerUserId = localStorage.getItem('cb_ramp_user_id');
-    if (!partnerUserId) {
-      partnerUserId = crypto.randomUUID();
-      localStorage.setItem('cb_ramp_user_id', partnerUserId);
-    }
+    // Use the actual project ID provided for the Coinbase onramp API
+    const projectId = "a1792415-47ed-42f9-861b-52c86d6f7a39";
     
     // Generate the one-click buy URL using parameters supported by the API
     // According to https://docs.cdp.coinbase.com/onramp/docs/api-oneclickbuy
     const buyUrl = await getOnrampBuyUrl({
-      // Using projectId param type which requires assets array
-      projectId: partnerUserId,
+      projectId: projectId,
       presetCryptoAmount: amount,
       assets: ['USDC']
       // Note: API doesn't support direct transfer to another wallet
