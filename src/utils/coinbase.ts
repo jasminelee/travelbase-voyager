@@ -68,9 +68,9 @@ export async function launchCoinbaseOneClickBuy(
       projectId: projectId,
       presetCryptoAmount: amount,
       assets: ['USDC'],
-      // Add the addresses parameter as required by the API
+      // Fix the addresses parameter format to match expected type (string array)
       addresses: {
-        USDC: targetAddress
+        USDC: [targetAddress]
       }
     });
     
